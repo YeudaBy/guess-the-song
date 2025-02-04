@@ -171,6 +171,7 @@ function ResultsView({
     return (
         <div>
             <h2>תוצאות המשחק</h2>
+            {/*// @ts-ignore*/}
             {participants.sort((a, b) => b.score - a.score).map(p => (
                 <div key={p.id}>
                     {p.nickname}: {p.score} נקודות
