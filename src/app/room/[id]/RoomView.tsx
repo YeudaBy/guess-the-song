@@ -2,12 +2,12 @@
 
 import React, {useEffect, useState} from 'react';
 import {repo} from 'remult';
-import {Room} from '@/server/Room';
-import {Track} from '@/server/Track';
+import {Room} from '@/server/entities/Room';
+import {Track} from '@/server/entities/Track';
 import {GameManager} from "@/app/room/[id]/GameView";
 import {Button, Callout, Card, Divider, Flex, Text, TextInput} from "@tremor/react";
 import {RiFireFill} from "@remixicon/react";
-import {Participant} from "@/server/Participant";
+import {Participant} from "@/server/entities/Participant";
 
 export default function RoomView({id}: { id: string }) {
     const [room, setRoom] = useState<Room>();

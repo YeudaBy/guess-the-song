@@ -1,11 +1,12 @@
 "use client"
 
-import {useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {Track} from '@/server/entities/Track';
 import {Participant} from "@/server/entities/Participant";
 import {Button, Card, Icon, Text, Title} from "@tremor/react";
 import {repo} from "remult";
 import {RiCheckboxCircleFill, RiCloseCircleFill, RiQuestionMark} from "@remixicon/react";
+import {TrackMetadata} from "@/server/sp-fetcher";
 
 interface GameViewProps {
     track: Track;
@@ -15,82 +16,123 @@ interface GameViewProps {
 
 const trackRepo = repo(Track)
 
-interface TrackMetadata {
-    audioPreview: string;
-    imageUrl?: string;
-}
-
 export function GameView({track, duration, onGuess}: GameViewProps) {
-    const [metadata, setMetadata] = useState<TrackMetadata>();
-    const [loading, setLoading] = useState(false);
-    const [timeLeft, setTimeLeft] = useState(duration);
-    const [options, setOptions] = useState<string[]>([]);
-    const [showHint, setShowHint] = useState(false);
-    const [selectedOption, setSelectedOption] = useState<string | null>(null);
-    const [isRevealing, setIsRevealing] = useState(false);
-    const [shouldAdvance, setShouldAdvance] = useState(false);
-    const [isAudioLoaded, setIsAudioLoaded] = useState(false);
+    const [gameState, setGameState] = useState({
+        metadata: null as TrackMetadata | null,
+        loading: true,
+        timeLeft: duration,
+        options: [] as string[],
+        showHint: false,
+        selectedOption: null as string | null,
+        isRevealing: false,
+        shouldAdvance: false,
+        isAudioLoaded: false,
+        error: null as string | null
+    });
 
     const audioRef = useRef<HTMLAudioElement>(null);
     const timerRef = useRef<NodeJS.Timeout>();
-    const correctSoundRef = useRef<HTMLAudioElement>(null);
-    const wrongSoundRef = useRef<HTMLAudioElement>(null);
+    const errorTimeoutRef = useRef<NodeJS.Timeout>();
+    const soundRefs = {
+        correct: useRef<HTMLAudioElement>(null),
+        wrong: useRef<HTMLAudioElement>(null)
+    };
 
-    // Effect for game setup
+    const cleanup = useCallback(() => {
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+        }
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+        }
+        if (errorTimeoutRef.current) {
+            clearTimeout(errorTimeoutRef.current);
+        }
+    }, []);
+
+    // Game setup effect
     useEffect(() => {
         const prepare = async () => {
             try {
-                setLoading(true);
-                setIsAudioLoaded(false);
+                setGameState(prev => ({...prev, loading: true, error: null}));
 
                 const newMetadata = await track.getMetadata();
-                setMetadata(newMetadata);
+                if (!newMetadata?.audioPreview) {
+                    throw new Error('Failed to load track metadata');
+                }
 
                 const response = await fetch("/api/random-name");
-                if (!response.ok) throw new Error('Failed to fetch random names');
-
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch random names: ${response.statusText}`);
+                }
                 const randomNames = await response.json();
+
                 const uniqueOptions = [...new Set([track.name, ...randomNames])];
-                const shuffledOptions = shuffleArray(uniqueOptions);
-                setOptions(shuffledOptions);
+                const shuffledOptions = uniqueOptions
+                    .sort(() => Math.random() - 0.5)
+                    .slice(0, 4); // Limit to 4 options
+
+                setGameState(prev => ({
+                    ...prev,
+                    metadata: newMetadata,
+                    options: shuffledOptions,
+                    loading: false,
+                    timeLeft: duration,
+                    showHint: false,
+                    selectedOption: null,
+                    isRevealing: false,
+                    shouldAdvance: false
+                }));
             } catch (error) {
                 console.error('Error preparing game:', error);
-            } finally {
-                setLoading(false);
+                setGameState(prev => ({
+                    ...prev,
+                    loading: false,
+                    error: error instanceof Error ? error.message : 'An unexpected error occurred'
+                }));
+
+                // Auto-advance after error
+                errorTimeoutRef.current = setTimeout(() => {
+                    onGuess(false, 0, duration);
+                }, 3000);
             }
         };
 
         cleanup();
-        setTimeLeft(duration);
-        setShowHint(false);
-        setSelectedOption(null);
-        setIsRevealing(false);
-        setShouldAdvance(false);
-
         prepare();
 
-        return () => cleanup();
-    }, [track, duration]);
+        return cleanup;
+    }, [track, duration, cleanup, onGuess]);
 
-    // Separate effect for audio setup and autoplay
+    // Audio setup effect
     useEffect(() => {
-        if (!metadata?.audioPreview || !audioRef.current) return;
+        if (!gameState.metadata?.audioPreview || !audioRef.current) return;
 
         const audio = audioRef.current;
 
         const handleCanPlay = () => {
-            setIsAudioLoaded(true);
+            setGameState(prev => ({...prev, isAudioLoaded: true}));
             audio.play()
                 .then(() => startTimer())
-                .catch(error => console.error('Audio playback failed:', error));
+                .catch(error => {
+                    console.error('Audio playback failed:', error);
+                    setGameState(prev => ({
+                        ...prev,
+                        error: 'Failed to play audio. Please check your audio settings.'
+                    }));
+                });
         };
 
         const handleEnded = () => {
-            audio.currentTime = 0;
-            audio.play().catch(console.error);
+            // Only restart if not revealing answer
+            if (!gameState.isRevealing) {
+                audio.currentTime = 0;
+                audio.play().catch(console.error);
+            }
         };
 
-        audio.src = metadata.audioPreview;
+        audio.src = gameState.metadata.audioPreview;
         audio.load();
         audio.addEventListener('canplay', handleCanPlay);
         audio.addEventListener('ended', handleEnded);
@@ -101,23 +143,13 @@ export function GameView({track, duration, onGuess}: GameViewProps) {
             audio.pause();
             audio.currentTime = 0;
         };
-    }, [metadata?.audioPreview]);
+    }, [gameState.metadata?.audioPreview, gameState.isRevealing]);
 
-    const cleanup = () => {
-        if (timerRef.current) {
-            clearInterval(timerRef.current);
-        }
-        if (audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current.currentTime = 0;
-        }
-    };
-
-    const startTimer = () => {
+    const startTimer = useCallback(() => {
         if (timerRef.current) clearInterval(timerRef.current);
 
         const startTime = Date.now();
-        const initialTimeLeft = timeLeft;
+        const initialTimeLeft = gameState.timeLeft;
 
         timerRef.current = setInterval(() => {
             const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
@@ -129,85 +161,100 @@ export function GameView({track, duration, onGuess}: GameViewProps) {
                 return;
             }
 
-            setTimeLeft(newTimeLeft);
+            setGameState(prev => ({...prev, timeLeft: newTimeLeft}));
         }, 100);
-    };
+    }, [gameState.timeLeft]);
 
-    const handleTimeUp = () => {
+    const handleTimeUp = useCallback(() => {
         cleanup();
-        setSelectedOption(track.name);
-        setIsRevealing(true);
-        window.navigator.vibrate?.(1000);
-        wrongSoundRef.current?.play();
+        setGameState(prev => ({
+            ...prev,
+            selectedOption: track.name,
+            isRevealing: true
+        }));
 
-        setTimeout(() => {
-            setShouldAdvance(true);
-            onGuess(false, 0, duration);
-        }, 2000);
-    };
-
-    const handleSubmitGuess = async (option: string) => {
-        cleanup();
-        setSelectedOption(option);
-        setIsRevealing(true);
-
-        const isCorrect = option === track.name;
-
-        window.navigator.vibrate?.(isCorrect ? [100, 100, 100] : [500]);
-        if (isCorrect) {
-            correctSoundRef.current?.play();
-        } else {
-            wrongSoundRef.current?.play();
+        if (window.navigator.vibrate) {
+            window.navigator.vibrate(1000);
         }
 
-        // Keep the current timeLeft value for the duration of the reveal
-        const finalTimeLeft = timeLeft;
+        soundRefs.wrong.current?.play();
 
         setTimeout(() => {
-            setShouldAdvance(true);
+            setGameState(prev => ({...prev, shouldAdvance: true}));
+            onGuess(false, 0, duration);
+        }, 2000);
+    }, [cleanup, track.name, duration, onGuess]);
+
+    const handleSubmitGuess = useCallback((option: string) => {
+        cleanup();
+        const isCorrect = option === track.name;
+
+        setGameState(prev => ({
+            ...prev,
+            selectedOption: option,
+            isRevealing: true
+        }));
+
+        if (window.navigator.vibrate) {
+            window.navigator.vibrate(isCorrect ? [100, 100, 100] : [500]);
+        }
+
+        const soundRef = isCorrect ? soundRefs.correct : soundRefs.wrong;
+        soundRef.current?.play();
+
+        const finalTimeLeft = gameState.timeLeft;
+
+        setTimeout(() => {
+            setGameState(prev => ({...prev, shouldAdvance: true}));
             onGuess(isCorrect, finalTimeLeft, duration);
         }, 2000);
-    };
+    }, [cleanup, track.name, gameState.timeLeft, duration, onGuess]);
 
     return (
-        <Card className="min-h-[100dvh] max-h-[100dvh] flex flex-col">
-            <div className="flex-1 flex flex-col p-4 overflow-hidden">
-                {loading ? (
+        <Card className="h-[100dvh] flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col p-4 overflow-y-auto">
+                {gameState.loading ? (
                     <div className="flex-1 flex justify-center items-center">
                         <Text>טוען משחק...</Text>
                     </div>
+                ) : gameState.error ? (
+                    <div className="flex-1 flex justify-center items-center flex-col gap-4">
+                        <Text className="text-red-500">{gameState.error}</Text>
+                    </div>
                 ) : (
                     <>
-                        <div className="flex justify-between items-center mb-4 shrink-0">
+                        <div className="flex justify-between items-center mb-4">
                             <Title>נחש את השיר</Title>
                             <Text className="text-lg font-semibold animate-pulse">
-                                {timeLeft} שניות
+                                {gameState.timeLeft} שניות
                             </Text>
                         </div>
 
-                        {metadata?.imageUrl && (
-                            <div className="relative w-full aspect-square mb-4 shrink-0">
-                                <div className={`
-                                    absolute inset-0 rounded-xl overflow-hidden
-                                    transition-all duration-1000 ease-in-out
-                                    ${showHint ? 'opacity-100' : 'opacity-0'}
-                                `}>
+                        {gameState.metadata?.imageUrl && (
+                            <div className="relative w-full aspect-[2/1] mb-4">
+                                <div
+                                    className={`
+                    absolute inset-0 rounded-xl overflow-hidden
+                    transition-all duration-1000 ease-in-out
+                    ${gameState.showHint ? 'opacity-100' : 'opacity-0'}
+                  `}
+                                >
                                     <img
-                                        src={metadata.imageUrl}
+                                        src={gameState.metadata.imageUrl}
                                         alt="רמז"
                                         className={`
-                                            w-full h-full object-cover
-                                            transition-all duration-1000
-                                            ${showHint ? 'blur-md scale-105' : 'blur-none scale-100'}
-                                        `}
+                      w-full h-full object-cover
+                      transition-all duration-1000
+                      ${gameState.showHint ? 'blur-md scale-105' : 'blur-none scale-100'}
+                    `}
                                     />
                                 </div>
-                                {!showHint && (
+                                {!gameState.showHint && (
                                     <div
                                         className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 rounded-xl">
-                                        <Icon icon={RiQuestionMark} className="w-20 h-20 text-gray-400 mb-2"/>
+                                        <Icon icon={RiQuestionMark} className="w-16 h-16 text-gray-400 mb-2"/>
                                         <button
-                                            onClick={() => setShowHint(true)}
+                                            onClick={() => setGameState(prev => ({...prev, showHint: true}))}
                                             className="px-4 py-2 bg-white rounded-lg shadow hover:shadow-md transition-all"
                                         >
                                             הצג רמז
@@ -217,54 +264,57 @@ export function GameView({track, duration, onGuess}: GameViewProps) {
                             </div>
                         )}
 
-                        <div className="flex-1 overflow-y-auto min-h-0 pb-4">
-                            <div className="grid grid-cols-1 gap-3">
-                                {options.map((option) => {
-                                    const isSelected = selectedOption === option;
-                                    const isCorrect = option === track.name;
-                                    const shouldShow = !isRevealing || isSelected || isCorrect;
+                        <div className="grid grid-cols-1 gap-3">
+                            {gameState.options.map(option => {
+                                const isSelected = gameState.selectedOption === option;
+                                const isCorrect = option === track.name;
+                                const shouldShow = !gameState.isRevealing || isSelected || isCorrect;
 
-                                    return (
-                                        <button
-                                            key={option}
-                                            onClick={() => !isRevealing && handleSubmitGuess(option)}
-                                            className={`
-                                                relative overflow-hidden
-                                                p-4 rounded-xl text-right transition-all
-                                                ${shouldShow ? 'opacity-100 transform scale-100' : 'opacity-50 transform scale-95'}
-                                                ${!isRevealing ? 'hover:bg-blue-50 bg-white border border-gray-200' :
-                                                isCorrect ? 'bg-green-100 border-2 border-green-500' :
-                                                    isSelected ? 'bg-red-100 border-2 border-red-500' :
-                                                        'bg-gray-100 border border-gray-300'}
-                                            `}
-                                            disabled={isRevealing}
-                                        >
-                                            <div className="flex justify-between items-center">
-                                                <span className={isRevealing && isCorrect ? 'font-bold' : ''}>
-                                                    {option}
-                                                </span>
-                                                {isRevealing && (isSelected || isCorrect) && (
-                                                    <Icon
-                                                        icon={isCorrect ? RiCheckboxCircleFill : RiCloseCircleFill}
-                                                        className={`h-6 w-6 ${isCorrect ? 'text-green-500' : 'text-red-500'}`}
-                                                    />
-                                                )}
-                                            </div>
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                                return (
+                                    <button
+                                        key={option}
+                                        onClick={() => !gameState.isRevealing && handleSubmitGuess(option)}
+                                        className={`
+                      relative overflow-hidden
+                      p-4 rounded-xl text-right transition-all
+                      ${shouldShow ? 'opacity-100 transform scale-100' : 'opacity-50 transform scale-95'}
+                      ${!gameState.isRevealing
+                                            ? 'hover:bg-blue-50 bg-white border border-gray-200'
+                                            : isCorrect
+                                                ? 'bg-green-100 border-2 border-green-500'
+                                                : isSelected
+                                                    ? 'bg-red-100 border-2 border-red-500'
+                                                    : 'bg-gray-100 border border-gray-300'
+                                        }
+                    `}
+                                        disabled={gameState.isRevealing}
+                                    >
+                                        <div className="flex justify-between items-center">
+                      <span className={gameState.isRevealing && isCorrect ? 'font-bold' : ''}>
+                        {option}
+                      </span>
+                                            {gameState.isRevealing && (isSelected || isCorrect) && (
+                                                <Icon
+                                                    icon={isCorrect ? RiCheckboxCircleFill : RiCloseCircleFill}
+                                                    className={`h-6 w-6 ${isCorrect ? 'text-green-500' : 'text-red-500'}`}
+                                                />
+                                            )}
+                                        </div>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </>
                 )}
             </div>
 
             <audio ref={audioRef}/>
-            <audio ref={correctSoundRef} src="/sounds/right.wav"/>
-            <audio ref={wrongSoundRef} src="/sounds/wrong.wav"/>
+            <audio ref={soundRefs.correct} src="/sounds/right.wav"/>
+            <audio ref={soundRefs.wrong} src="/sounds/wrong.wav"/>
         </Card>
     );
 }
+
 
 interface GameManagerProps {
     tracks: Track[];
