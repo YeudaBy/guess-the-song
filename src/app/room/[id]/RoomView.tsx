@@ -2,41 +2,66 @@
 
 import React, {useEffect, useState} from 'react';
 import {repo} from 'remult';
-import {Room} from '@/server/entities/Room';
+import {Room, RoomStatus} from '@/server/entities/Room';
 import {Track} from '@/server/entities/Track';
 import {GameManager} from "@/app/room/[id]/GameView";
-import {Button, Callout, Card, Divider, Flex, Text, TextInput} from "@tremor/react";
+import {Button, Callout, Card, Divider, Flex, Text, TextInput, Title} from "@tremor/react";
 import {RiFireFill} from "@remixicon/react";
 import {Participant} from "@/server/entities/Participant";
+import {Pair} from "yaml";
+
 
 export default function RoomView({id}: { id: string }) {
     const [room, setRoom] = useState<Room>();
-    const [gameState, setGameState] = useState<'waiting' | 'in-progress' | 'completed'>('waiting');
-    const [tracks, setTracks] = useState<Track[]>([]);
+    const [gameState, setGameState] = useState<RoomStatus>(RoomStatus.Initializing);
+    const [error, setError] = useState<string>()
+
     const [currentTrack, setCurrentTrack] = useState<Track>();
+
     const [participants, setParticipants] = useState<Participant[]>([]);
     const [currentParticipant, setCurrentParticipant] = useState<Participant>()
+    const [scores, setScores] = useState<Pair<string, number>[]>([])
 
     const roomRepo = repo(Room);
-    const trackRepo = repo(Track);
     const participantRepo = repo(Participant)
 
-    useEffect(() => {
-        async function loadRoomData() {
-            const fetchedRoom = await roomRepo.findFirst({id: Number(id)});
-            setRoom(fetchedRoom);
+    const updateRoomStatus = async (status: RoomStatus) => {
+        setGameState(status)
+        console.log(status)
+        if (room) {
+            await roomRepo.update(room.id, {status});
         }
+    }
 
-        loadRoomData();
+    useEffect(() => {
+        // Load room
+        (async () => {
+            const _room = await roomRepo.findFirst({id: Number(id)}, {
+                include: {
+                    tracks: {include: {track: true}},
+                    participants: true
+                }
+            })
+            if (!_room) {
+                setError("לא הצלחנו לטעון את החדר :(") // todo
+                await updateRoomStatus(RoomStatus.Error)
+                return
+            }
+            setRoom(_room)
+            await updateRoomStatus(_room!.status === RoomStatus.Initializing ? RoomStatus.Lobby : _room!.status)
+        })()
     }, [id]);
 
     useEffect(() => {
+        console.log({gameState}) // todo remove when works
+    }, [gameState]);
+
+    console.log(room)
+
+    useEffect(() => {
+        // subscribe to participants
         const unsubscribe = participantRepo
-            .liveQuery({
-                where: {
-                    roomId: Number(id)
-                }
-            })
+            .liveQuery({where: {roomId: Number(id)}})
             .subscribe(info => setParticipants(info.applyChanges))
 
         return () => {
@@ -45,6 +70,7 @@ export default function RoomView({id}: { id: string }) {
     }, [id]);
 
     useEffect(() => {
+        // logout when exit page
         window.addEventListener("beforeunload", (event) => {
             participantRepo.delete(currentParticipant?.id || "")
         });
@@ -53,20 +79,13 @@ export default function RoomView({id}: { id: string }) {
     const startGame = async () => {
         if (!room) return;
 
-        const tracks = await trackRepo.find({
-            limit: room.limit
-        });
+        await updateRoomStatus(RoomStatus.Loading)
 
-        await roomRepo.update(room, {
-            status: 'in-progress',
-        });
-
-        setTracks(tracks)
-        setGameState('in-progress');
-        setCurrentTrack(tracks[0]);
+        await updateRoomStatus(RoomStatus.InProgress)
     };
 
     const joinRoom = async (nickname: string) => {
+        // TODO
         if (room) {
             const newParticipant = await participantRepo.insert({
                 nickname,
@@ -77,8 +96,15 @@ export default function RoomView({id}: { id: string }) {
     };
 
     const renderContent = () => {
+        if (!room) {
+            return <Callout title={"טוען חדר..."}/>; // TODO
+        }
         switch (gameState) {
-            case 'waiting':
+            case RoomStatus.Loading:
+                return <Callout title={"טוען חדר..."}/>; // TODO
+            case RoomStatus.Error:
+                return <Callout title={error || "unknown error"} color={"red"}/>
+            case RoomStatus.Lobby:
                 return (
                     <WaitingLobby
                         participants={participants}
@@ -87,31 +113,33 @@ export default function RoomView({id}: { id: string }) {
                         canJoin={!currentParticipant}
                     />
                 );
-            case 'in-progress':
+            case RoomStatus.InProgress:
                 return (
                     <GameManager
-                        tracks={tracks}
+                        tracks={room.tracks || []}
                         duration={room?.songDuration || 5}
                         currentPlayer={currentParticipant!}
                     />
                 );
-            case 'completed':
+            case RoomStatus.Completed:
                 return (
                     <ResultsView
                         participants={participants}
                     />
                 );
+            case RoomStatus.Initializing:
+                return (<Card>
+                    <Title>הנתונים נטענים...</Title>
+                </Card>)
         }
     };
 
-    if (!room) return <Callout title={"טוען חדר..."}/>;
-
     return (
         <div>
-            <RoomHeader
+            {!!room && <RoomHeader
                 roomCode={room.id.toString()}
                 participants={participants}
-            />
+            />}
             {renderContent()}
         </div>
     );

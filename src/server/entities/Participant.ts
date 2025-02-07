@@ -1,5 +1,5 @@
 import {Entity, Fields, Relations} from "remult";
-import {Room} from "@/server/Room";
+import {Room} from "@/server/entities/Room";
 
 @Entity("participants", {allowApiCrud: true})
 export class Participant {

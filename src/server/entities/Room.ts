@@ -1,5 +1,16 @@
 import {Entity, Fields, Relations} from "remult";
-import {Participant} from "@/server/Participant";
+import {Participant} from "@/server/entities/Participant";
+import {Track} from "@/server/entities/Track";
+import {TrackMetadata} from "@/server/sp-fetcher";
+
+export enum RoomStatus {
+    Initializing,
+    Lobby,
+    Loading,
+    InProgress,
+    Completed,
+    Error
+}
 
 
 @Entity<Room>("room", {
@@ -24,9 +35,30 @@ export class Room {
     @Fields.createdAt()
     createdAt = new Date()
 
-    @Fields.string()
-    status: 'waiting' | 'in-progress' | 'completed' = 'waiting'
+    @Fields.enum<RoomStatus>(() => RoomStatus)
+    status: RoomStatus = RoomStatus.Initializing
 
     @Relations.toMany(() => Participant)
     participants?: Participant[]
+
+    @Relations.toMany<Room, TrackInRoom>(() => TrackInRoom, 'roomId')
+    tracks?: TrackInRoom[]
+
+}
+
+
+@Entity<TrackInRoom>('TrackInRoom', {
+    allowApiCrud: true,
+    id: ['trackId', 'roomId'],
+})
+export class TrackInRoom {
+    @Fields.integer()
+    trackId = 0
+    @Fields.integer()
+    roomId = 0
+    @Relations.toOne<TrackInRoom, Track>(() => Track, 'trackId')
+    track?: Track
+
+    @Fields.json<TrackMetadata>()
+    metadata!: TrackMetadata
 }

@@ -1,5 +1,5 @@
 import {BackendMethod, dbNamesOf, Entity, Fields, Relations, SqlDatabase} from "remult";
-import {User} from "@/server/User";
+import {User} from "@/server/entities/User";
 import {fetchTrackData} from "@/server/sp-fetcher";
 
 @Entity("tracks", {
@@ -38,12 +38,16 @@ export class Track {
     }
 
     @BackendMethod({allowed: true})
-    static randomNames = async () => {
+    static randomApi = async (count: number) => {
         const tracks = await dbNamesOf(Track)
         const sql = SqlDatabase.getDb()
-        const r = await sql.execute(`SELECT name
+        const r = await sql.execute(`SELECT id, name
                                      FROM ${tracks}
-                                     ORDER BY RANDOM() LIMIT 4`)
+                                     ORDER BY RANDOM() LIMIT ${count}`)
         return r.rows
+    }
+
+    static getRandom = async (count: number) => {
+        return fetch(`/api/random?count=${count}`).then(r => r.json())
     }
 }

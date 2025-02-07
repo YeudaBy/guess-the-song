@@ -1,23 +1,24 @@
 const playlistId = '6SvyiNXrMfoj4QXp3aiCa4';
 const trackId = "11Q3W4kReoMTUWuc8BQyLC"
 
+export type TrackMetadata = {
+    name: string
+    id: string,
+    artist: string,
+    audioPreview: string
+    imageUrl?: string
+}
 
-export const fetchTrackData = async (playlistId: string): Promise<{
-    previewUrl: string,
-    imageUrl: string
-} | undefined> => {
+export const fetchTrackData = async (playlistId: string): Promise<TrackMetadata | undefined> => {
     console.log(playlistId)
     try {
-        // Fetch the playlist embed page HTML content
         const htmlContent = await fetch(`https://open.spotify.com/embed/track/${playlistId}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
             },
         }).then(res => res.text());
-        // console.log(htmlContent)
 
-        // Extract the JSON data from the HTML
         const jsonDataRegex = /<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/;
         const jsonDataMatch = htmlContent.match(jsonDataRegex);
 
@@ -28,18 +29,26 @@ export const fetchTrackData = async (playlistId: string): Promise<{
         const jsonData = JSON.parse(jsonDataMatch[1]);
         console.log(jsonData)
 
-        // Extract the preview URL and image URL from the JSON data
-        const previewUrl = jsonData.props.pageProps.state.data.entity.audioPreview.url;
-        const imageUrl = jsonData.props.pageProps.state.data.entity.visualIdentity.image[0].url;
+        const entity = jsonData.props.pageProps.state.data.entity
+        if (!entity) return
 
-        console.log("Preview URL:", previewUrl);
-        console.log("Image URL:", imageUrl);
-
-        return {previewUrl, imageUrl};
+        const obj: TrackMetadata = {
+            id: entity.id,
+            name: entity.name,
+            artist: entity.artists?.map((a: any) => a.name).join(" ,"),
+            audioPreview: entity.audioPreview.url,
+            imageUrl: entity.visualIdentity.image[0].url
+        }
+        console.log(obj)
+        return obj
     } catch (error) {
         console.error("Error fetching playlist data:", error);
         return undefined;
     }
+}
+
+
+const fetchMetadata = (trackId: string) => {
 }
 
 // fetchTrackData(trackId).then(tracks => {

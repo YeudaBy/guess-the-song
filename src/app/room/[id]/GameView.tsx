@@ -4,17 +4,15 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import {Track} from '@/server/entities/Track';
 import {Participant} from "@/server/entities/Participant";
 import {Button, Card, Icon, Text, Title} from "@tremor/react";
-import {repo} from "remult";
 import {RiCheckboxCircleFill, RiCloseCircleFill, RiQuestionMark} from "@remixicon/react";
 import {TrackMetadata} from "@/server/sp-fetcher";
+import {TrackInRoom} from "@/server/entities/Room";
 
 interface GameViewProps {
-    track: Track;
+    track: TrackInRoom;
     duration: number;
     onGuess: (correct: boolean, timeLeft: number, duration: number) => void;
 }
-
-const trackRepo = repo(Track)
 
 export function GameView({track, duration, onGuess}: GameViewProps) {
     const [gameState, setGameState] = useState({
@@ -57,25 +55,17 @@ export function GameView({track, duration, onGuess}: GameViewProps) {
             try {
                 setGameState(prev => ({...prev, loading: true, error: null}));
 
-                const newMetadata = await track.getMetadata();
-                if (!newMetadata?.audioPreview) {
-                    throw new Error('Failed to load track metadata');
-                }
 
-                const response = await fetch("/api/random-name");
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch random names: ${response.statusText}`);
-                }
-                const randomNames = await response.json();
+                const randomNames = await Track.getRandom(5);
 
-                const uniqueOptions = [...new Set([track.name, ...randomNames])];
+                const uniqueOptions = [...new Set([track.track?.name, ...randomNames.map((e: any) => e.name)])];
                 const shuffledOptions = uniqueOptions
                     .sort(() => Math.random() - 0.5)
                     .slice(0, 4); // Limit to 4 options
 
                 setGameState(prev => ({
                     ...prev,
-                    metadata: newMetadata,
+                    metadata: track.metadata,
                     options: shuffledOptions,
                     loading: false,
                     timeLeft: duration,
@@ -169,7 +159,7 @@ export function GameView({track, duration, onGuess}: GameViewProps) {
         cleanup();
         setGameState(prev => ({
             ...prev,
-            selectedOption: track.name,
+            selectedOption: track.track!.name,
             isRevealing: true
         }));
 
@@ -183,11 +173,11 @@ export function GameView({track, duration, onGuess}: GameViewProps) {
             setGameState(prev => ({...prev, shouldAdvance: true}));
             onGuess(false, 0, duration);
         }, 2000);
-    }, [cleanup, track.name, duration, onGuess]);
+    }, [cleanup, track, duration, onGuess]);
 
     const handleSubmitGuess = useCallback((option: string) => {
         cleanup();
-        const isCorrect = option === track.name;
+        const isCorrect = option === track.track!.name;
 
         setGameState(prev => ({
             ...prev,
@@ -208,7 +198,7 @@ export function GameView({track, duration, onGuess}: GameViewProps) {
             setGameState(prev => ({...prev, shouldAdvance: true}));
             onGuess(isCorrect, finalTimeLeft, duration);
         }, 2000);
-    }, [cleanup, track.name, gameState.timeLeft, duration, onGuess]);
+    }, [cleanup, track, gameState.timeLeft, duration, onGuess]);
 
     return (
         <Card className="h-[100dvh] flex flex-col overflow-hidden">
@@ -267,7 +257,7 @@ export function GameView({track, duration, onGuess}: GameViewProps) {
                         <div className="grid grid-cols-1 gap-3">
                             {gameState.options.map(option => {
                                 const isSelected = gameState.selectedOption === option;
-                                const isCorrect = option === track.name;
+                                const isCorrect = option === track.track!.name;
                                 const shouldShow = !gameState.isRevealing || isSelected || isCorrect;
 
                                 return (
@@ -317,7 +307,7 @@ export function GameView({track, duration, onGuess}: GameViewProps) {
 
 
 interface GameManagerProps {
-    tracks: Track[];
+    tracks: TrackInRoom[];
     duration: number;
     currentPlayer: Participant;
 }
