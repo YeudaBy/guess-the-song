@@ -21,7 +21,7 @@ export class Room {
     id!: number
 
     @Relations.toOne(() => Participant)
-    hostId!: Participant
+    host!: Participant
 
     @Fields.number()
     limit = 5
@@ -38,12 +38,11 @@ export class Room {
     @Fields.enum<RoomStatus>(() => RoomStatus)
     status: RoomStatus = RoomStatus.Initializing
 
-    @Relations.toMany(() => Participant)
+    @Relations.toMany<Room, Participant>(() => Participant, "roomId")
     participants?: Participant[]
 
     @Relations.toMany<Room, TrackInRoom>(() => TrackInRoom, 'roomId')
     tracks?: TrackInRoom[]
-
 }
 
 

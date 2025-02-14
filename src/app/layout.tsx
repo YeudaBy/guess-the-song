@@ -2,6 +2,7 @@ import type {Metadata} from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import {M_PLUS_Rounded_1c} from 'next/font/google'
+import ClientLayout from "@/app/ClientLayout";
 
 
 const geistSans = localFont({
@@ -36,7 +37,9 @@ export default function RootLayout({
         <body className={`home-page min-h-screen 
         bg-tremor-background bg-[url(/images/double-bubble.webp)] bg-blend-multiply
         ${mPlusRounded.className} ${geistMono.variable}`}>
-        {children}
+        <ClientLayout>
+            {children}
+        </ClientLayout>
         </body>
         </html>
     );

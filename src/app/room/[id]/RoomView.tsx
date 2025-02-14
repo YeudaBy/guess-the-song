@@ -39,7 +39,7 @@ export default function RoomView({id}: { id: string }) {
             const _room = await roomRepo.findFirst({id: Number(id)}, {
                 include: {
                     tracks: {include: {track: true}},
-                    participants: true
+                    participants: {include: {user: true}}
                 }
             })
             if (!_room) {
@@ -72,7 +72,7 @@ export default function RoomView({id}: { id: string }) {
     useEffect(() => {
         // logout when exit page
         window.addEventListener("beforeunload", (event) => {
-            participantRepo.delete(currentParticipant?.id || "")
+            participantRepo.delete(currentParticipant?.user?.id || "") // todo
         });
     }, []);
 

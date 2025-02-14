@@ -7,6 +7,7 @@ export type TrackMetadata = {
     artist: string,
     audioPreview: string
     imageUrl?: string
+    explicit: boolean
 }
 
 export const fetchTrackData = async (playlistId: string): Promise<TrackMetadata | undefined> => {
@@ -32,12 +33,14 @@ export const fetchTrackData = async (playlistId: string): Promise<TrackMetadata 
         const entity = jsonData.props.pageProps.state.data.entity
         if (!entity) return
 
+
         const obj: TrackMetadata = {
             id: entity.id,
             name: entity.name,
             artist: entity.artists?.map((a: any) => a.name).join(" ,"),
             audioPreview: entity.audioPreview.url,
-            imageUrl: entity.visualIdentity.image[0].url
+            imageUrl: entity.visualIdentity.image[0].url,
+            explicit: entity.isExplicit
         }
         console.log(obj)
         return obj
