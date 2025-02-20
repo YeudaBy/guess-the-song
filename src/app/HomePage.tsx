@@ -62,7 +62,7 @@ export function HomePageContent() {
 
                     <div className={"grow"}>
                         <div className={"text-right mt-24 mb-12 m-2"}>
-                            <Title className={`${rubikS80Fade.className} text-white drop-shadow-xl`}>
+                            <Title className={`${rubikS80Fade.className} title text-white drop-shadow-xl`}>
                                 <span className={"text-[150px]/5 sm:text-[170px]/5"}>מי </span>
                                 <br/>
                                 <span className={"text-7xl/10 sm:text-8xl/10"}>שישמע!</span>
