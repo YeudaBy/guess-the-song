@@ -20,7 +20,7 @@ export class Room {
     @Fields.autoIncrement()
     id!: number
 
-    @Relations.toOne(() => Participant)
+    @Relations.toOne(() => Participant, {defaultIncluded: true})
     host!: Participant
 
     @Fields.number()

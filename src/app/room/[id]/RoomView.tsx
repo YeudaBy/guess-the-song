@@ -1,17 +1,23 @@
 "use client"
 
-import React, {useEffect, useState} from 'react';
+import React, {Dispatch, SetStateAction, useEffect, useState} from 'react';
 import {repo} from 'remult';
 import {Room, RoomStatus} from '@/server/entities/Room';
 import {Track} from '@/server/entities/Track';
 import {GameManager} from "@/app/room/[id]/GameView";
-import {Callout, Divider, Flex, Text, TextInput, Title} from "@tremor/react";
+import {Button, Callout, Flex, Text, TextInput, Title} from "@tremor/react";
 import {RiFireFill} from "@remixicon/react";
 import {Participant} from "@/server/entities/Participant";
 import {Pair} from "yaml";
-import {Button, Card} from "@/ui/components";
+import {Card, VolumeSpinner} from "@/ui/components";
 import {useSession} from "next-auth/react";
+import {User} from "@/server/entities/User";
+import {useAutoAnimate} from "@formkit/auto-animate/react";
+import Image from "next/image";
 
+const roomRepo = repo(Room);
+const participantRepo = repo(Participant)
+const userRepo = repo(User)
 
 export default function RoomView({id}: { id: string }) {
     const [room, setRoom] = useState<Room>();
@@ -20,12 +26,9 @@ export default function RoomView({id}: { id: string }) {
 
     const [currentTrack, setCurrentTrack] = useState<Track>();
 
-    const [participants, setParticipants] = useState<Participant[]>([]);
     const [currentParticipant, setCurrentParticipant] = useState<Participant>()
     const [scores, setScores] = useState<Pair<string, number>[]>([])
 
-    const roomRepo = repo(Room);
-    const participantRepo = repo(Participant)
 
     const updateRoomStatus = async (status: RoomStatus) => {
         setGameState(status)
@@ -45,7 +48,7 @@ export default function RoomView({id}: { id: string }) {
                 }
             })
             if (!_room) {
-                setError("לא הצלחנו לטעון את החדר :(") // todo
+                setError("לא הצלחנו לטעון את החדר :(")
                 await updateRoomStatus(RoomStatus.Error)
                 return
             }
@@ -55,47 +58,16 @@ export default function RoomView({id}: { id: string }) {
     }, [id]);
 
     useEffect(() => {
-        console.log({gameState}) // todo remove when works
-    }, [gameState]);
-
-    console.log(room)
-
-    useEffect(() => {
-        // subscribe to participants
-        const unsubscribe = participantRepo
-            .liveQuery({where: {roomId: Number(id)}})
-            .subscribe(info => setParticipants(info.applyChanges))
-
-        return () => {
-            unsubscribe()
-        };
-    }, [id]);
-
-    useEffect(() => {
-        // logout when exit page
+        if (!room) return
         window.addEventListener("beforeunload", (event) => {
-            participantRepo.delete(currentParticipant?.user?.id || "") // todo
+            // roomRepo.relations(room).participants.delete(currentParticipant?.id || "")
+            event.preventDefault()
         });
     }, []);
 
     const startGame = async () => {
         if (!room) return;
-
-        await updateRoomStatus(RoomStatus.Loading)
-
         await updateRoomStatus(RoomStatus.InProgress)
-    };
-
-    const joinRoom = async (nickname: string) => {
-        // TODO
-        if (room) {
-            const newParticipant = await participantRepo.insert({
-                // @ts-ignore todo
-                nickname,
-                roomId: Number(id)
-            })
-            setCurrentParticipant(newParticipant)
-        }
     };
 
     const renderContent = () => {
@@ -110,10 +82,9 @@ export default function RoomView({id}: { id: string }) {
             case RoomStatus.Lobby:
                 return (
                     <WaitingLobby
-                        participants={participants}
-                        onJoin={joinRoom}
+                        setCurrentParticipant={setCurrentParticipant}
                         onStartGame={startGame}
-                        canJoin={!currentParticipant}
+                        room={room}
                     />
                 );
             case RoomStatus.InProgress:
@@ -127,7 +98,7 @@ export default function RoomView({id}: { id: string }) {
             case RoomStatus.Completed:
                 return (
                     <ResultsView
-                        participants={participants}
+                        participants={room.participants || []}
                     />
                 );
             case RoomStatus.Initializing:
@@ -141,7 +112,7 @@ export default function RoomView({id}: { id: string }) {
         <div className={"m-3 flex flex-col gap-4 items-center"}>
             {!!room && <RoomHeader
                 roomCode={room.id.toString()}
-                participants={participants}
+                participants={room.participants || []}
             />}
             {renderContent()}
         </div>
@@ -149,50 +120,84 @@ export default function RoomView({id}: { id: string }) {
 }
 
 function WaitingLobby({
-                          participants,
-                          onJoin,
-                          canJoin,
+                          setCurrentParticipant,
+                          room,
                           onStartGame
                       }: {
-    participants: Participant[],
-    onJoin: (nickname: string) => void,
-    canJoin: boolean
+    setCurrentParticipant: Dispatch<SetStateAction<Participant | undefined>>
+    room: Room,
     onStartGame: () => void
 }) {
     const [nickname, setNickname] = useState<string>();
     const {data} = useSession()
+    const [participants, setParticipants] = useState<Participant[]>()
+
+    const [listRef] = useAutoAnimate()
+
+    useEffect(() => {
+        // subscribe to participants
+        const unsubscribe = participantRepo
+            .liveQuery({where: {roomId: Number(room.id)}, include: {user: true}})
+            .subscribe(info => {
+                console.log(info.items)
+                setParticipants(info.applyChanges)
+            })
+
+        return () => {
+            unsubscribe()
+        };
+    }, [room.id]);
+
+    const joinRoom = async () => {
+        const guest = await userRepo.insert({name: nickname, isGuest: true})
+        const newParticipant = await roomRepo.relations(room).participants.insert({user: guest})
+        setCurrentParticipant(newParticipant)
+
+    };
 
     useEffect(() => {
         !!data?.user?.name && setNickname(data.user.name)
     }, []);
 
+    const alreadyJoined = () => {
+        if (!data?.user) return
+        const ps = participants?.filter(p => p.user?.email === data.user?.email)
+        console.log(ps)
+        return Boolean(ps?.length)
+    }
+
     return (
         <Card className={"max-w-md w-screen m-auto"}>
-            <Title className={"text-xl mb-4 text-center"}>
-                חדר המתנה
-            </Title>
-            <Flex className={"gap-2"}>
+            <Flex className={"justify-center items-center flex-col"}>
+                <VolumeSpinner/>
+                <Title className={"text-xl mb-4 text-center"}>
+                    חדר המתנה
+                </Title>
+            </Flex>
+
+            {!alreadyJoined() && <Flex className={"gap-2"}>
                 <TextInput
                     value={nickname}
                     onValueChange={setNickname}
                     placeholder="הכנס כינוי"
                 />
                 <Button
-                    // @ts-ignore todo
-                    onClick={() => onJoin(nickname!)} disabled={!canJoin || !nickname}>
+                    onClick={joinRoom}
+                    disabled={!nickname}>
                     הצטרף
                 </Button>
-            </Flex>
+            </Flex>}
 
-            <Divider/>
-
-            <div>
-                <Text className={"text-lg text-white text-right"}>משתתפים:</Text>
-                {participants.map(p => (
-                    // @ts-ignore todo
-                    <div key={p.id}>{p.nickname}</div>
+            <div ref={listRef} className="grid" style={{gridTemplateColumns: "auto auto auto"}}>
+                {participants?.map(p => (
+                    <div key={p.id} className="flex gap-2 items-center">
+                        <Image src={p.user?.image || "/images/person.png"} alt="pfp"
+                               className="rounded-full" width={40} height={40}/>
+                        <Text className="text-black text-md">{p.user?.name}</Text>
+                    </div>
                 ))}
             </div>
+
 
             <Button
                 // @ts-ignore todo

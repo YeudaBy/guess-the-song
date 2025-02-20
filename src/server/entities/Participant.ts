@@ -1,15 +1,13 @@
-import {Entity, Fields, Relations} from "remult";
+import {Entity, Fields, IdEntity, Relations} from "remult";
 import {Room} from "@/server/entities/Room";
 import {User} from "@/server/entities/User";
 
 @Entity<Participant>("participants", {
     allowApiCrud: true,
-    id: {
-        roomId: true,
-        userId: true
-    }
+    // id: ['roomId', 'userId']
 })
-export class Participant {
+export class Participant extends IdEntity {
+
     @Fields.number()
     score?: number
 

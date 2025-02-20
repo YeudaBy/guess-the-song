@@ -22,9 +22,9 @@ export function HomePageContent() {
     return (
         <div className={"img-filter bg-tremor-brand overflow-x-hidden"}>
             <div className={"p-4"}>
-                <div className={"md:flex gap-10 justify-center items-center md:min-h-screen md:max-w-5xl m-auto"}>
+                <div className={"md:flex gap-10 justify-center items-center md:min-h-screen md:max-w-5xl md:mx-12 m-auto"}>
 
-                    <div className={"w-[96%] m-auto my-6 relative md:w-80"}> {/*Image cont*/}
+                    <div className={"w-[96%] m-auto my-6 relative md:w-80"}>
                         <motion.div
                             initial={{rotate: 0}}
                             whileInView={{rotate: 6}}

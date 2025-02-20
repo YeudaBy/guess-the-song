@@ -1,3 +1,4 @@
+import {motion} from 'framer-motion';
 import React, {ReactNode} from 'react';
 
 export const Card = ({children, className = ''}: {
@@ -76,6 +77,133 @@ export const Input = ({label, error, ...props}: {
             {error && (
                 <p className="text-sm text-red-600">{error}</p>
             )}
+        </div>
+    );
+};
+
+
+export const LoadingSpinner = () => {
+    return (
+        <div className="flex items-center justify-center h-20 w-20">
+            <motion.div
+                className="relative w-16 h-16"
+                animate={{rotate: 360}}
+                transition={{repeat: Infinity, duration: 1.5, ease: "linear"}}
+            >
+                <motion.span
+                    className="absolute w-4 h-4 bg-tremor-brand rounded-full"
+                    style={{top: 0, left: "50%", transform: "translateX(-50%)"}}
+                    animate={{scale: [1, 1.5, 1]}}
+                    transition={{repeat: Infinity, duration: 1.5, ease: "easeInOut"}}
+                />
+                <motion.span
+                    className="absolute w-4 h-4 bg-tremor-background-emphasis rounded-full"
+                    style={{bottom: 0, left: "50%", transform: "translateX(-50%)"}}
+                    animate={{scale: [1, 1.5, 1]}}
+                    transition={{repeat: Infinity, duration: 1.5, ease: "easeInOut", delay: 0.75}}
+                />
+            </motion.div>
+        </div>
+    );
+};
+
+export const VolumeSpinner = () => {
+    return (
+        <div className="flex items-center justify-center h-32 w-32 relative">
+
+            {/*    <motion.div*/}
+            {/*        className="absolute w-10 h-2 bg-gray-800 rounded-lg top-6 left-10 origin-left"*/}
+            {/*        animate={{ rotate: [0, -15, 0] }}*/}
+            {/*        transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}*/}
+            {/*    />*/}
+            {/*</motion.div>*/}
+
+            <motion.div
+                animate={{rotate: [25, 15, 25]}}
+                transition={{repeat: Infinity, duration: 2, ease: "easeInOut"}}
+                className={"flex flex-col justify-center items-center origin-top-right z-10"}>
+                <div className={"bg-tremor-background-emphasis size-4 rounded-full"}/>
+                <div className={"bg-tremor-background-emphasis w-1.5 h-10"}/>
+                <div className={"bg-tremor-background-emphasis w-1.5 h-8 rotate-[32deg] origin-top-right"}/>
+            </motion.div>
+
+            <motion.div
+                animate={{rotate: 360}}
+                transition={{repeat: Infinity, duration: 5, ease: "linear"}}
+                className={"size-28 border-4 border-black rounded-full p-3 bg-tremor-border/50"}>
+                <div
+                    className={"size-20 border-4 border-x-black border-transparent rounded-full flex justify-center items-center"}>
+                    <div
+                        className={"size-14 border-4 border-x-black border-transparent rounded-full flex justify-center items-center"}>
+                        <div className={"size-6 border-4 border-tremor-brand-emphasis rounded-full"}/>
+                    </div>
+                </div>
+            </motion.div>
+        </div>
+    )
+        ;
+};
+
+export const DefaultAvatar = ({name}: { name: string }) => {
+    // יוצר צבע ייחודי בהתבסס על השם
+    const stringToColor = (str: string) => {
+        let hash = 0;
+        for (let i = 0; i < str?.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        let color = '#';
+        for (let i = 0; i < 3; i++) {
+            const value = (hash >> (i * 8)) & 0xFF;
+            color += ('00' + value.toString(16)).substr(-2);
+        }
+        return color;
+    };
+
+    // מחלץ ראשי תיבות מהשם
+    const getInitials = (name: string) => {
+        return name
+            ?.split(' ')
+            .map(word => word[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+    };
+
+    const bgColor = stringToColor(name);
+    const initials = getInitials(name);
+
+    return (
+        <div
+            className="w-5 h-5 rounded-full flex items-center justify-center text-xs text-white"
+            style={{backgroundColor: bgColor}}
+        >
+            {initials}
+        </div>
+    );
+};
+
+export const ColoredAvatar = ({name, imageUrl}: { name: string, imageUrl: string }) => {
+    // יוצר צבע רנדומלי מבוסס על השם
+    const getRandomHue = (str: string) => {
+        let hash = 0;
+        for (let i = 0; i < str?.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return hash % 360; // מחזיר ערך בין 0-360 עבור גוון HSL
+    };
+
+    const hue = getRandomHue(name);
+
+    return (
+        <div className="relative w-10 h-10">
+            <img
+                src={imageUrl}
+                alt="Avatar"
+                className="w-full h-full rounded-full object-cover"
+                style={{
+                    filter: `hue-rotate(${hue}deg) saturate(1.5)`
+                }}
+            />
         </div>
     );
 };
