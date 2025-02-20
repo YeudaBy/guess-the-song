@@ -207,3 +207,54 @@ export const ColoredAvatar = ({name, imageUrl}: { name: string, imageUrl: string
         </div>
     );
 };
+
+export const PrimaryCard = ({children, className}: {
+    children: ReactNode,
+    className: string
+}) => {
+    return <div className={"bg-white p-4 rounded-3xl relative border"}>
+        {/*<div className={"w-full h-full bg-[#DFD0FF] rotate-[12deg] absolute top-0 right-0 rounded-3xl"}/>*/}
+        <motion.div
+            initial={{rotate: 0}}
+            whileInView={{rotate: 6}}
+            viewport={{once: true}}
+            transition={{type: "spring", stiffness: 100}}
+            className={"w-full h-full right-0 absolute top-0 -z-10 bg-[#50358C]/40 rounded-3xl"}
+        />
+
+        <motion.div
+            initial={{rotate: 0}}
+            whileInView={{rotate: 3}}
+            viewport={{once: true}}
+            transition={{type: "spring", stiffness: 100}}
+            className={"w-full h-full right-0 absolute top-0 -z-10 bg-tremor-brand rounded-3xl"}
+        />
+        {children}
+    </div>
+}
+
+export const SecondaryCard = ({children, className}: {
+    children: ReactNode,
+    className: string
+}) => {
+    return <div className={"bg-tremor-brand p-4 rounded-3xl relative"}>
+        {/*<div className={"w-full h-full bg-[#DFD0FF] rotate-[12deg] absolute top-0 right-0 rounded-3xl"}/>*/}
+        <motion.div
+            initial={{rotate: 0}}
+            whileInView={{rotate: 3}}
+            viewport={{once: true}}
+            transition={{type: "spring", stiffness: 100}}
+            className={"w-full h-full right-0 absolute top-0 -z-10 bg-[#50358C]/40 rounded-3xl"}
+        />
+
+        <motion.div
+            initial={{rotate: 0}}
+            whileInView={{rotate: 6}}
+            viewport={{once: true}}
+            transition={{type: "spring", stiffness: 100}}
+            className={"w-full h-full right-0 absolute top-0 -z-10 bg-tremor-brand/20 rounded-3xl"}
+        />
+        {children}
+    </div>
+}
+

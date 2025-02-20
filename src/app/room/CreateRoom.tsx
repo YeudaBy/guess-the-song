@@ -9,7 +9,7 @@ import {RiErrorWarningFill, RiLockFill} from "@remixicon/react";
 import {Track} from "@/server/entities/Track";
 import {TrackMetadata} from "@/server/sp-fetcher";
 import {AnimatePresence, motion} from "framer-motion";
-import {Card, VolumeSpinner} from "@/ui/components";
+import {Card, PrimaryCard, SecondaryCard, VolumeSpinner} from "@/ui/components";
 import {useSession} from "next-auth/react";
 import {User} from "@/server/entities/User";
 
@@ -109,7 +109,7 @@ export function CreateRoom() {
     }
 
     return (
-        <Card className={"w-full rounded-tl-none border shadow-lg border-tremor-brand-subtle"}>
+        <SecondaryCard className={"w-full rounded-tl-none border shadow-lg border-tremor-brand-subtle"}>
 
             <form onSubmit={e => {
                 e.preventDefault()
@@ -196,6 +196,6 @@ export function CreateRoom() {
                     </Flex>
                 </DialogPanel>
             </Dialog>
-        </Card>
+        </SecondaryCard>
     )
 }

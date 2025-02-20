@@ -3,10 +3,9 @@
 import React, {useState} from "react";
 import {useRouter} from "next/navigation";
 import {motion} from "framer-motion";
-import {Button, Icon, Text, TextInput, Title} from "@tremor/react";
+import {Button, Card, Icon, Text, TextInput, Title} from "@tremor/react";
 import {RiArrowLeftLine, RiMedal2Fill, RiMusicLine, RiPlayFill} from "@remixicon/react";
 import Link from "next/link";
-import {Card} from "@/ui/components";
 import {Rubik_80s_Fade} from "next/font/google";
 
 const rubikS80Fade = Rubik_80s_Fade({
@@ -22,10 +21,11 @@ export function HomePageContent() {
     return (
         <div className={"img-filter bg-tremor-brand overflow-hidden"}>
             <div className={"p-4 relative overflow-hidden"}>
-                <div className={"md:flex gap-10 justify-center items-center md:min-h-screen md:max-w-5xl md:mx-12 m-auto overflow-hidden"}>
+                <div
+                    className={"md:flex gap-10 justify-center items-center md:min-h-screen md:max-w-5xl md:mx-12 m-auto overflow-hidden"}>
 
                     <img src={"/images/pattern.svg"}
-                         className={"absolute -top-40 -left-40 -rotate-12 max-w-none w-[140%] "} />
+                         className={"absolute -top-40 -left-40 -rotate-12 max-w-none w-[140%] "}/>
 
                     <div className={"w-[96%] m-auto my-6 relative md:w-80"}>
                         <motion.div
@@ -41,7 +41,7 @@ export function HomePageContent() {
                             <source media="(min-width: 768px)" srcSet="/images/person-bg-ver.webp"/>
                             <img
                                 alt={"Person sits, listening to music"}
-                                className={"w-full h-full object-cover rounded-3xl z-10"}
+                                className={"w-full h-full object-cover rounded-3xl"}
                             />
                         </picture>
 
@@ -99,48 +99,37 @@ export function HomePageContent() {
                 </div>
 
                 <img src={"/images/pattern.svg"}
-                     className={"max-w-none w-[140%] -mx-10 my-10 md:-mt-20 animate-pulse-op opacity-50 -z-50!"}/>
+                     className={"max-w-none w-[140%] -mx-10 my-10 md:-mt-20 animate-pulse-op opacity-50"}/>
 
-                <div className={"grid grid-cols-2 md:grid-cols-3 gap-4 m-2 max-w-2xl md:m-auto md:mt-24"}>
+                <div className={"grid gap-4 m-2 max-w-2xl md:m-auto md:mt-24"}>
 
                     <Link href={"/room"}>
-                        <Card className={"relative py-6 text-center"}>
-                            <Icon icon={RiMedal2Fill} size={"xl"} className={"text-secondary-500"}/>
+                        <Card className={"relative py-6 text-center rounded-3xl w-2/3 mr-auto"}>
+                            <Icon icon={RiMedal2Fill} size={"xl"} className={"text-secondary-500 animate-bounce"}/>
                             <Text
                                 className={"text-lg tracking-wide hover:underline"}
                             >
                                 צרו חדר והתחרו עם החברים!
                             </Text>
                             <div
-                                className={"h-10 w-10 border-t-4 border-l-4 border-secondary-500 absolute top-2 left-2"}/>
+                                className={"h-10 w-10 rounded-3xl border-4 border-l-secondary-500 rotate-45 border-transparent absolute top-2 left-2"}/>
                         </Card>
                     </Link>
 
 
-                    <div/>
-                    <div/>
-                    <div className="hidden md:block"></div>
-
                     <img src={"/images/logo-bg.png"}
-                         className={"rounded-3xl shadow-lg"}/>
-
-                    <div/>
-                    <div/>
-                    <div className="hidden md:block"></div>
-                    <div className="hidden md:block"></div>
-                    <div className="hidden md:block"></div>
-                    <div className="hidden md:block"></div>
+                         className={"rounded-3xl shadow-lg w-2/3 m-auto"}/>
 
                     <Link href={"/contribute"}>
                         <Card
-                            className={"w-full h-full relative text-center"}>
-                            <Icon icon={RiMusicLine} size={"xl"} className={"text-secondary-500"}/>
+                            className={"relative py-6 text-center rounded-3xl w-2/3 ml-auto"}>
+                            <Icon icon={RiMusicLine} size={"xl"} className={"text-secondary-500 animate-bounce"}/>
                             <Text className={"text-lg tracking-wide hover:underline"}>
                                 הכניסו לתחרות את השירים האהובים עליכם!
                             </Text>
 
-                            <div className={"h-10 w-10 border-b-4 border-r-4 border-secondary-500 " +
-                                "absolute bottom-2 right-2"}/>
+                            <div
+                                className={"h-10 w-10 rounded-3xl border-4 border-r-secondary-500 rotate-45 border-transparent absolute bottom-2 right-2"}/>
                         </Card>
                     </Link>
 
