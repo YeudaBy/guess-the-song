@@ -20,9 +20,12 @@ export function HomePageContent() {
     const router = useRouter()
 
     return (
-        <div className={"img-filter bg-tremor-brand overflow-x-hidden"}>
-            <div className={"p-4"}>
-                <div className={"md:flex gap-10 justify-center items-center md:min-h-screen md:max-w-5xl md:mx-12 m-auto"}>
+        <div className={"img-filter bg-tremor-brand overflow-hidden"}>
+            <div className={"p-4 relative overflow-hidden"}>
+                <div className={"md:flex gap-10 justify-center items-center md:min-h-screen md:max-w-5xl md:mx-12 m-auto overflow-hidden"}>
+
+                    <img src={"/images/pattern.svg"}
+                         className={"absolute -top-40 -left-40 -rotate-12 max-w-none w-[140%] "} />
 
                     <div className={"w-[96%] m-auto my-6 relative md:w-80"}>
                         <motion.div

@@ -29,8 +29,7 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" dir={"rtl"}>
-        <body className={`home-page min-h-screen bg-tremor-background
-        bg-secondary-50/5 bg-[url(/images/double-bubble.webp)] bg-blend-multiply backdrop-blur-sm
+        <body className={`home-page min-h-screen 
         ${mPlusRounded.className} ${geistMono.variable}`}>
         <ClientLayout>
             {children}
@@ -39,3 +38,4 @@ export default function RootLayout({
         </html>
     );
 }
+//         // bg-tremor-background bg-secondary-50/5 bg-[url(/images/double-bubble.webp)] bg-blend-multiply backdrop-blur-sm
