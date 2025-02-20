@@ -22,8 +22,9 @@ export function HomePageContent() {
     return (
         <div className={"img-filter bg-tremor-brand overflow-x-hidden"}>
             <div className={"p-4"}>
-                <div className={"md:flex gap-10 justify-center items-center"}>
-                    <div className={"w-[96%] m-auto my-6 relative"}>
+                <div className={"md:flex gap-10 justify-center items-center md:min-h-screen md:max-w-5xl m-auto"}>
+
+                    <div className={"w-[96%] m-auto my-6 relative md:w-80"}> {/*Image cont*/}
                         <motion.div
                             initial={{rotate: 0}}
                             whileInView={{rotate: 6}}
@@ -32,8 +33,14 @@ export function HomePageContent() {
                             className={"w-full h-full absolute top-0 z-0 bg-[#50358C]/40 rounded-3xl"}
                         />
 
-                        <img src={"/images/person-bg-ho.webp"} alt={"Person sits, listen to music"}
-                             className={"w-full object-cover rounded-3xl sm:hidden z-10"}/>
+                        <picture>
+                            <source media="(max-width: 768px)" srcSet="/images/person-bg-ho.webp"/>
+                            <source media="(min-width: 768px)" srcSet="/images/person-bg-ver.webp"/>
+                            <img
+                                alt={"Person sits, listening to music"}
+                                className={"w-full h-full object-cover rounded-3xl z-10"}
+                            />
+                        </picture>
 
                         <motion.div
                             initial={{rotate: 0}}
@@ -53,16 +60,12 @@ export function HomePageContent() {
                         </div>
                     </div>
 
-
-                    <img src={"/images/person-bg-ver.webp"} alt={"Person sits, listen to music"}
-                         className={"h-80 object-cover rounded-3xl hidden md:block"}/>
-
-                    <div>
+                    <div className={"grow"}>
                         <div className={"text-right mt-24 mb-12 m-2"}>
                             <Title className={`${rubikS80Fade.className} text-white drop-shadow-xl`}>
-                                <span className={"text-[150px]/5"}>מי </span>
+                                <span className={"text-[150px]/5 sm:text-[170px]/5"}>מי </span>
                                 <br/>
-                                <span className={"text-7xl/10"}>שישמע!</span>
+                                <span className={"text-7xl/10 sm:text-8xl/10"}>שישמע!</span>
                             </Title>
 
                             <Text className={"text-2xl font-semibold mt-6 text-white"}>
@@ -92,7 +95,8 @@ export function HomePageContent() {
                     </div>
                 </div>
 
-                <img src={"/images/pattern.svg"} className={"max-w-none w-[140%] -mx-10 my-10 animate-pulse"}/>
+                <img src={"/images/pattern.svg"}
+                     className={"max-w-none w-[140%] -mx-10 my-10 md:-mt-20 animate-pulse-op opacity-50 -z-50!"}/>
 
                 <div className={"grid grid-cols-2 md:grid-cols-3 gap-4 m-2 max-w-2xl md:m-auto md:mt-24"}>
 

@@ -56,3 +56,16 @@
         opacity: .85;
     }
 }
+
+.animate-pulse-op {
+    animation: animate-pulse-op-key 1500ms cubic-bezier(0.4, 0, 0.6, 1) infinite alternate-reverse;
+}
+
+@keyframes animate-pulse-op-key {
+    from {
+        opacity: .5;
+    }
+    to {
+        opacity: .25;
+    }
+}
