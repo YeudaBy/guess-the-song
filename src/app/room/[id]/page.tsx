@@ -1,8 +1,9 @@
 "use client"
 
-import React from "react";
+import React, {use} from "react";
 import RoomView from "@/app/room/[id]/RoomView";
 
-export default function RoomPage({params}: { params: { id: string } }) {
-    return <RoomView id={params.id}/>;
+export default function RoomPage({params}: { params: Promise<{ id: string }> }) {
+    const {id} = use(params)
+    return <RoomView id={id}/>;
 }

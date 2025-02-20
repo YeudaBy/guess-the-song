@@ -5,10 +5,12 @@ import {repo} from 'remult';
 import {Room, RoomStatus} from '@/server/entities/Room';
 import {Track} from '@/server/entities/Track';
 import {GameManager} from "@/app/room/[id]/GameView";
-import {Button, Callout, Card, Divider, Flex, Text, TextInput, Title} from "@tremor/react";
+import {Callout, Divider, Flex, Text, TextInput, Title} from "@tremor/react";
 import {RiFireFill} from "@remixicon/react";
 import {Participant} from "@/server/entities/Participant";
 import {Pair} from "yaml";
+import {Button, Card} from "@/ui/components";
+import {useSession} from "next-auth/react";
 
 
 export default function RoomView({id}: { id: string }) {
@@ -88,6 +90,7 @@ export default function RoomView({id}: { id: string }) {
         // TODO
         if (room) {
             const newParticipant = await participantRepo.insert({
+                // @ts-ignore todo
                 nickname,
                 roomId: Number(id)
             })
@@ -135,7 +138,7 @@ export default function RoomView({id}: { id: string }) {
     };
 
     return (
-        <div>
+        <div className={"m-3 flex flex-col gap-4 items-center"}>
             {!!room && <RoomHeader
                 roomCode={room.id.toString()}
                 participants={participants}
@@ -156,17 +159,29 @@ function WaitingLobby({
     canJoin: boolean
     onStartGame: () => void
 }) {
-    const [nickname, setNickname] = useState('');
+    const [nickname, setNickname] = useState<string>();
+    const {data} = useSession()
+
+    useEffect(() => {
+        !!data?.user?.name && setNickname(data.user.name)
+    }, []);
 
     return (
-        <Card className={"m-2 text-white bg-blue-800 w-fit m-auto"}>
+        <Card className={"max-w-md w-screen m-auto"}>
+            <Title className={"text-xl mb-4 text-center"}>
+                חדר המתנה
+            </Title>
             <Flex className={"gap-2"}>
                 <TextInput
                     value={nickname}
                     onValueChange={setNickname}
                     placeholder="הכנס כינוי"
                 />
-                <Button onClick={() => onJoin(nickname)} disabled={!canJoin}>הצטרף</Button>
+                <Button
+                    // @ts-ignore todo
+                    onClick={() => onJoin(nickname!)} disabled={!canJoin || !nickname}>
+                    הצטרף
+                </Button>
             </Flex>
 
             <Divider/>
@@ -174,11 +189,13 @@ function WaitingLobby({
             <div>
                 <Text className={"text-lg text-white text-right"}>משתתפים:</Text>
                 {participants.map(p => (
+                    // @ts-ignore todo
                     <div key={p.id}>{p.nickname}</div>
                 ))}
             </div>
 
             <Button
+                // @ts-ignore todo
                 icon={RiFireFill}
                 className={"w-full gap-2 mt-4"}
                 onClick={onStartGame}
@@ -201,8 +218,8 @@ function ResultsView({
             <h2>תוצאות המשחק</h2>
             {/*// @ts-ignore*/}
             {participants.sort((a, b) => b.score - a.score).map(p => (
-                <div key={p.id}>
-                    {p.nickname}: {p.score} נקודות
+                // @ts-ignore todo
+                <div key={p.id}>{p.nickname}: {p.score} נקודות
                 </div>
             ))}
         </div>

@@ -60,20 +60,20 @@ const handler = NextAuth({
 });
 
 
-export async function getUserOnServer(): Promise<UserInfo | undefined> {
-    const session = await getServerSession()
-    return await api.withRemult(async () => {
-        const user = await remult.repo(User).findOne({
-            where: {
-                email: session?.user?.email || "--"
-            }
-        })
-        if (!user) return
-        return {
-            ...user,
-            id: user.id as unknown as string
-        }
-    })
-}
+// export async function getUserOnServer(): Promise<UserInfo | undefined> {
+//     const session = await getServerSession()
+//     return await api.withRemult(async () => {
+//         const user = await remult.repo(User).findOne({
+//             where: {
+//                 email: session?.user?.email || "--"
+//             }
+//         })
+//         if (!user) return
+//         return {
+//             ...user,
+//             id: user.id as unknown as string
+//         }
+//     })
+// }
 
-// export {handler as GET, handler as POST}
+export {handler as GET, handler as POST}

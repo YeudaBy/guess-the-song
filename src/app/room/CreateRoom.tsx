@@ -2,39 +2,41 @@
 
 import {repo} from "remult";
 import {Room} from "@/server/entities/Room";
-import React, {useEffect, useState} from "react";
+import React, {useState} from "react";
 import {useRouter} from "next/navigation";
-import {Button, Callout, Card, Dialog, DialogPanel, Flex, NumberInput, Text, TextInput, Title} from "@tremor/react";
-import {RiErrorWarningFill, RiFileCopy2Fill, RiLockFill, RiUserFill} from "@remixicon/react";
+import {Callout, Dialog, DialogPanel, Flex, NumberInput, Text, TextInput, Title} from "@tremor/react";
+import {RiErrorWarningFill, RiLockFill} from "@remixicon/react";
 import {Track} from "@/server/entities/Track";
 import {TrackMetadata} from "@/server/sp-fetcher";
-import {User} from "@/server/entities/User";
 import {AnimatePresence, motion} from "framer-motion";
+import {Button, Card} from "@/ui/components";
+import {useSession} from "next-auth/react";
 
 const roomRepo = repo(Room)
 const trackRepo = repo(Track)
 
 export function CreateRoom() {
+    const {data} = useSession();
+
     const [limit, setLimit] = useState<number>(5)
     const [songDuration, setSongDuration] = useState<number>(15)
     const [password, setPassword] = useState<string>("")
-    const [hostName, setHostName] = useState<string>()
+    // const [hostName, setHostName] = useState<string>()
     const [error, setError] = useState<string>()
     const [loadingState, setLoadingState] = useState<string>()
 
     const router = useRouter()
 
-    useEffect(() => {
-        repo(User).findId(Number(localStorage.getItem("uid")))
-            .then(r => setHostName(r?.name))
-    }, []);
+    // useEffect(() => {
+    //     if (!!data?.user?.name) setHostName(data.user.name)
+    // }, [data?.user]);
 
     const reset = () => {
         setError(undefined)
         setLimit(5)
         setSongDuration(15)
         setPassword("")
-        setHostName("")
+        // setHostName("")
         setLoadingState(undefined)
     }
 
@@ -56,22 +58,21 @@ export function CreateRoom() {
                 songDuration,
                 password: password || undefined,
             })
-            setLoadingState('מגדיר אותך כמנהל...')
 
-            setLoadingState('מגדיר אותך כמנהל...')
-            const uid = Number(localStorage.getItem("uid"))
-            let user = await repo(User).findId(uid)
-            if (!user) {
-                user = await repo(User).insert({name: hostName})
-                localStorage.setItem("uid", user.id.toString())
-            }
-
-            // Insert participant with explicit roomId and userId
-            await roomRepo.relations(room).participants.insert({
-                roomId: room.id,
-                userId: user.id,
-                score: 0
-            })
+            // setLoadingState('מגדיר אותך כמנהל...')
+            // const uid = Number(localStorage.getItem("uid"))
+            // let user = await repo(User).findId(uid)
+            // if (!user) {
+            //     user = await repo(User).insert({name: hostName})
+            //     localStorage.setItem("uid", user.id.toString())
+            // }
+            //
+            // // Insert participant with explicit roomId and userId
+            // await roomRepo.relations(room).participants.insert({
+            //     roomId: room.id,
+            //     userId: user.id,
+            //     score: 0
+            // })
 
             setLoadingState('אוסף שירים...')
             const randomTracks = await Track.getRandom(room.limit);
@@ -156,11 +157,11 @@ export function CreateRoom() {
                         value={password}
                         onValueChange={setPassword}
                     />
-                    <Button variant={"secondary"}
-                            size={"xs"}
+                    <Button variant={"outline"}
+                            size={"sm"}
                             className={"gap-2"}
                             disabled={!password.length}
-                            icon={RiFileCopy2Fill}
+                        // @ts-ignore todo
                             type={"button"}
                             onClick={() => {
                                 navigator.clipboard.writeText(password)
@@ -170,17 +171,18 @@ export function CreateRoom() {
 
                 </Flex>
 
-                <div>
-                    <TextInput
-                        icon={RiUserFill}
-                        required
-                        placeholder="לואי"
-                        value={hostName}
-                        onValueChange={setHostName}
-                    />
-                    <Text className={"text-sm"}>הזן את שמך</Text>
-                </div>
+                {/*<div>*/}
+                {/*    <TextInput*/}
+                {/*        icon={RiUserFill}*/}
+                {/*        required*/}
+                {/*        placeholder="לואי"*/}
+                {/*        value={hostName}*/}
+                {/*        onValueChange={setHostName}*/}
+                {/*    />*/}
+                {/*    <Text className={"text-sm"}>הזן את שמך</Text>*/}
+                {/*</div>*/}
 
+                {/*// @ts-ignore todo*/}
                 <Button type="submit" disabled={!!loadingState}>
                     צור חדר
                 </Button>
@@ -192,6 +194,7 @@ export function CreateRoom() {
                         title={error!}
                         color={"red"}
                         icon={RiErrorWarningFill}/>
+                    {/*// @ts-ignore todo*/}
                     <Button color={"red"} onClick={reset}>
                         איפוס
                     </Button>

@@ -20,3 +20,39 @@
     transform: rotateY(3.142rad);
     filter: drop-shadow(-2mm -1mm 2mm rgba(128, 88, 174, 0.43));
 }
+
+.clip-path-polygon {
+    clip-path: polygon(
+            10px 0,
+            calc(100% - 10px) 0,
+            100% 10px,
+            100% calc(100% - 10px),
+            calc(100% - 10px) 100%,
+            10px 100%,
+            0 calc(100% - 10px),
+            0 10px
+    );
+}
+
+.img-filter {
+    img {
+        filter: hue-rotate(250deg);
+    }
+}
+
+.play-icon svg {
+    height: 3.5rem !important;
+    width: 3.5rem !important;
+    filter: drop-shadow(0 0 .5rem black);
+}
+
+.input-id > input {
+    color: white !important;
+    font-size: 1.15rem !important;
+
+    &::placeholder {
+        color: inherit !important;
+        font-size: 1.15rem !important;
+        opacity: .85;
+    }
+}

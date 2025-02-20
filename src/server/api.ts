@@ -4,7 +4,6 @@ import {Track} from "@/server/entities/Track";
 import {Room, TrackInRoom} from "@/server/entities/Room";
 import {Participant} from "@/server/entities/Participant";
 import {createPostgresDataProvider} from "remult/postgres";
-import {getUserOnServer} from "@/app/api/auth/[...nextauth]/route";
 
 export const api = remultNextApp({
     admin: true,

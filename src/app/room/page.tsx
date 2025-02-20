@@ -88,6 +88,7 @@ export default function RoomPage() {
                 </Title>
                 {
                     rooms?.map(room => <Card
+                        key={room.id}
                         decoration={"right"}
                         decorationColor={roomStatusColor(room.status)}
                         className={"text-start"}>

@@ -328,6 +328,7 @@ export function GameManager({
             );
             setScores(prev => ({
                 ...prev,
+                // @ts-ignore todo
                 [currentPlayer.id]: (prev[currentPlayer.id] || 0) + pointsEarned
             }));
         }
