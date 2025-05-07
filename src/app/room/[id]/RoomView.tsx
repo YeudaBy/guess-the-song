@@ -3,39 +3,44 @@
 import React, {Dispatch, SetStateAction, useEffect, useState} from 'react';
 import {repo} from 'remult';
 import {Room, RoomStatus} from '@/server/entities/Room';
-import {Track} from '@/server/entities/Track';
 import {GameManager} from "@/app/room/[id]/GameView";
 import {Button, Callout, Flex, Text, TextInput, Title} from "@tremor/react";
 import {RiFireFill} from "@remixicon/react";
 import {Participant} from "@/server/entities/Participant";
-import {Pair} from "yaml";
 import {Card, VolumeSpinner} from "@/ui/components";
 import {useSession} from "next-auth/react";
 import {User} from "@/server/entities/User";
 import {useAutoAnimate} from "@formkit/auto-animate/react";
 import Image from "next/image";
+import {useSupabase} from "@/server/supabase";
 
 const roomRepo = repo(Room);
 const participantRepo = repo(Participant)
 const userRepo = repo(User)
 
+
 export default function RoomView({id}: { id: string }) {
+    const {data} = useSession();
+    const [isHost, setIsHost] = useState(false)
+
     const [room, setRoom] = useState<Room>();
-    const [gameState, setGameState] = useState<RoomStatus>(RoomStatus.Initializing);
+    const [allowed, setAllowed] = useState<boolean>(true)
+
+    useEffect(() => {
+        setIsHost((data?.user?.email) === room?.host.user?.email)
+    }, [data?.user?.email, room?.host]);
+    useEffect(() => {
+        setAllowed(isHost)
+    }, [isHost]);
+
+    const {data: gameState, sendData, setChannelName, channel} = useSupabase<RoomStatus>()
+
     const [error, setError] = useState<string>()
-
-    const [currentTrack, setCurrentTrack] = useState<Track>();
-
     const [currentParticipant, setCurrentParticipant] = useState<Participant>()
-    const [scores, setScores] = useState<Pair<string, number>[]>([])
-
 
     const updateRoomStatus = async (status: RoomStatus) => {
-        setGameState(status)
-        console.log(status)
-        if (room) {
-            await roomRepo.update(room.id, {status});
-        }
+        await sendData(status)
+        if (!!room) await roomRepo.update(room!.id, {status});
     }
 
     useEffect(() => {
@@ -44,7 +49,8 @@ export default function RoomView({id}: { id: string }) {
             const _room = await roomRepo.findFirst({id: Number(id)}, {
                 include: {
                     tracks: {include: {track: true}},
-                    participants: {include: {user: true}}
+                    participants: {include: {user: true}},
+                    host: {include: {user: true}}
                 }
             })
             if (!_room) {
@@ -52,10 +58,22 @@ export default function RoomView({id}: { id: string }) {
                 await updateRoomStatus(RoomStatus.Error)
                 return
             }
+            setChannelName(`room~${_room.id}`)
             setRoom(_room)
-            await updateRoomStatus(_room!.status === RoomStatus.Initializing ? RoomStatus.Lobby : _room!.status)
+
+            if (_room.password && _room.password !== "") { // change logic to include requests
+                setAllowed(false)
+            }
         })()
     }, [id]);
+
+    useEffect(() => {
+        if (!room || !channel) return
+        sendData(room.status)
+        if (room.status === RoomStatus.Initializing) {
+            updateRoomStatus(RoomStatus.Lobby)
+        }
+    }, [channel, room]);
 
     useEffect(() => {
         if (!room) return
@@ -67,6 +85,7 @@ export default function RoomView({id}: { id: string }) {
 
     const startGame = async () => {
         if (!room) return;
+        console.log("start game")
         await updateRoomStatus(RoomStatus.InProgress)
     };
 
@@ -80,18 +99,24 @@ export default function RoomView({id}: { id: string }) {
             case RoomStatus.Error:
                 return <Callout title={error || "unknown error"} color={"red"}/>
             case RoomStatus.Lobby:
+                if (!allowed) return (
+                    <JoinRequest
+                        validate={p => p === room?.password}
+                        onAccept={() => setAllowed(true)}
+                    />
+                )
                 return (
                     <WaitingLobby
                         setCurrentParticipant={setCurrentParticipant}
                         onStartGame={startGame}
                         room={room}
+                        isHost={isHost}
                     />
                 );
             case RoomStatus.InProgress:
                 return (
                     <GameManager
-                        tracks={room.tracks || []}
-                        duration={room?.songDuration || 5}
+                        room={room}
                         currentPlayer={currentParticipant!}
                     />
                 );
@@ -114,6 +139,7 @@ export default function RoomView({id}: { id: string }) {
                 roomCode={room.id.toString()}
                 participants={room.participants || []}
             />}
+            <Text className={"bg-tremor-background-emphasis text-white"}>{gameState || "test"}</Text>
             {renderContent()}
         </div>
     );
@@ -122,15 +148,18 @@ export default function RoomView({id}: { id: string }) {
 function WaitingLobby({
                           setCurrentParticipant,
                           room,
-                          onStartGame
+                          onStartGame,
+                          isHost
                       }: {
     setCurrentParticipant: Dispatch<SetStateAction<Participant | undefined>>
     room: Room,
-    onStartGame: () => void
+    onStartGame: () => void,
+    isHost: boolean
 }) {
     const [nickname, setNickname] = useState<string>();
     const {data} = useSession()
     const [participants, setParticipants] = useState<Participant[]>()
+    const [joined, setJoined] = useState(false)
 
     const [listRef] = useAutoAnimate()
 
@@ -148,23 +177,23 @@ function WaitingLobby({
         };
     }, [room.id]);
 
+    useEffect(() => {
+        if (!data?.user) return
+        const ps = participants?.filter(p => p.user?.email === data.user?.email)[0]
+        !!ps && setCurrentParticipant(ps)
+        setJoined(!!ps)
+    }, [data, participants]);
+
     const joinRoom = async () => {
         const guest = await userRepo.insert({name: nickname, isGuest: true})
         const newParticipant = await roomRepo.relations(room).participants.insert({user: guest})
         setCurrentParticipant(newParticipant)
-
+        setJoined(true)
     };
 
     useEffect(() => {
         !!data?.user?.name && setNickname(data.user.name)
     }, []);
-
-    const alreadyJoined = () => {
-        if (!data?.user) return
-        const ps = participants?.filter(p => p.user?.email === data.user?.email)
-        console.log(ps)
-        return Boolean(ps?.length)
-    }
 
     return (
         <Card className={"max-w-md w-screen m-auto"}>
@@ -175,7 +204,7 @@ function WaitingLobby({
                 </Title>
             </Flex>
 
-            {!alreadyJoined() && <Flex className={"gap-2"}>
+            {!joined && <Flex className={"gap-2"}>
                 <TextInput
                     value={nickname}
                     onValueChange={setNickname}
@@ -199,7 +228,7 @@ function WaitingLobby({
             </div>
 
 
-            <Button
+            {isHost && <Button
                 // @ts-ignore todo
                 icon={RiFireFill}
                 className={"w-full gap-2 mt-4"}
@@ -207,7 +236,7 @@ function WaitingLobby({
                 // disabled={participants.length < 2}
             >
                 התחל משחק
-            </Button>
+            </Button>}
         </Card>
     );
 }
@@ -229,6 +258,33 @@ function ResultsView({
             ))}
         </div>
     );
+}
+
+function JoinRequest({onAccept, validate}: {
+    onAccept: () => void,
+    validate: (password: string) => boolean
+}) {
+    const [password, setPassword] = useState("")
+    const [error, setError] = useState(false)
+    return <Card>
+        <Title className={"text-xl mb-4 text-center"}>
+            הזן ססמא
+        </Title>
+        <Text>
+            חדר זה הינו פרטי. הזינו את הססמא שקיבלתם מיוצר החדר:
+        </Text>
+        <form onSubmit={e => {
+            e.preventDefault()
+            if (validate(password)) {
+                console.log("Validated")
+                onAccept()
+            } else setError(true)
+        }}>
+            <TextInput error={error} errorMessage={"ססמא שגויה!"} value={password} onValueChange={setPassword}
+                       placeholder={"ססמא"}/>
+            <Button type={"submit"}>כנס</Button>
+        </form>
+    </Card>
 }
 
 function RoomHeader({

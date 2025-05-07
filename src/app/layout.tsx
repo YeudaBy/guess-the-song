@@ -40,7 +40,7 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" dir={"rtl"}>
-        <body className={`home-page min-h-screen 
+        <body className={`min-h-screen 
         ${mPlusRounded.className} ${geistMono.variable}`}>
         <ClientLayout>
             {children}

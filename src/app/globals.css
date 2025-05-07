@@ -16,10 +16,10 @@
     box-sizing: border-box;
 }
 
-.rotate-y-person {
-    transform: rotateY(3.142rad);
-    filter: drop-shadow(-2mm -1mm 2mm rgba(128, 88, 174, 0.43));
-}
+/*.rotate-y-person {*/
+/*    transform: rotateY(3.142rad);*/
+/*    filter: drop-shadow(-2mm -1mm 2mm rgba(128, 88, 174, 0.43));*/
+/*}*/
 
 .clip-path-polygon {
     clip-path: polygon(
@@ -36,7 +36,7 @@
 
 .img-filter {
     img {
-        filter: hue-rotate(250deg);
+        /*filter: hue-rotate(250deg);*/
     }
 }
 
@@ -72,4 +72,53 @@
 
 .title {
     text-shadow: 4px 4px 8px black;
+}
+
+
+.note {
+    font-size: 100px;
+    color: #C30AD8;
+    /*text-shadow:*/
+    /*        2px 2px 0 #830893,*/
+    /*        4px 4px 0 #4e0755,*/
+    /*        0 0 10px #C30AD8,*/
+    /*        0 0 20px #C30AD8,*/
+    /*        0 0 40px #830893;*/
+    text-shadow:
+            2px 2px 0 #830893,
+            4px 4px 0 #4e0755,
+            0 0 15px #da63f4,
+            0 0 30px #da63f4,
+            0 0 60px #a008b3;
+
+    transform: perspective(600px) rotateX(30deg);
+    transform-style: preserve-3d;
+
+    /*animation: pulse 2s infinite ease-in-out;*/
+}
+
+@keyframes pulse {
+    0%, 100% {
+        text-shadow:
+                2px 2px 0 #830893,
+                4px 4px 0 #4e0755,
+                0 0 10px #C30AD8,
+                0 0 20px #C30AD8,
+                0 0 40px #830893;
+    }
+    50% {
+        text-shadow:
+                2px 2px 0 #830893,
+                4px 4px 0 #4e0755,
+                0 0 15px #da63f4,
+                0 0 30px #da63f4,
+                0 0 60px #a008b3;
+    }
+}
+
+
+.bg-circles div{
+    background: radial-gradient(circle at 50%, #4e0755 45%, #da63f4 98%);
+    box-shadow: #4e0755 0 0 4px 4px inset;
+    margin: 2rem;
 }

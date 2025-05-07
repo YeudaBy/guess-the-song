@@ -6,15 +6,73 @@ import {Participant} from "@/server/entities/Participant";
 import {Button, Card, Icon, Text, Title} from "@tremor/react";
 import {RiCheckboxCircleFill, RiCloseCircleFill, RiQuestionMark} from "@remixicon/react";
 import {TrackMetadata} from "@/server/sp-fetcher";
-import {TrackInRoom} from "@/server/entities/Room";
+import {Room, TrackInRoom} from "@/server/entities/Room";
 
-interface GameViewProps {
+
+export function GameManager({room, currentPlayer}: {
+    room: Room
+    currentPlayer: Participant;
+}) {
+    const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+    const [scores, setScores] = useState<{ [key: string]: number }>({});
+    const [ready, setReady] = useState(false)
+
+    console.log({room, currentPlayer})
+
+    const handleGuess = (correct: boolean, timeRemaining: number, totalDuration: number) => {
+        if (correct) {
+            const pointsEarned = Math.ceil(
+                5 * (timeRemaining / totalDuration)
+            );
+            setScores(prev => ({
+                ...prev,
+                // @ts-ignore todo
+                [currentPlayer.id]: (prev[currentPlayer.id] || 0) + pointsEarned
+            }));
+        }
+
+        if (currentTrackIndex < room.tracks!.length - 1) {
+            setCurrentTrackIndex(prev => prev + 1);
+        } else {
+        }
+    };
+
+    if (!ready) return (
+        <Card>
+            <Text>מוכנים?</Text>
+            <Button onClick={() => setReady(true)}>
+                בואו נצא לדרך!
+            </Button>
+        </Card>
+    )
+
+    return (
+        <div>
+            <Text>
+                Score:
+            </Text>
+            {
+                Object.entries(scores).map(([name, score]) => {
+                    return <Text>
+                        {name}: {score}
+                    </Text>
+                })
+            }
+            <GameView
+                track={room.tracks![currentTrackIndex]}
+                duration={room.songDuration}
+                onGuess={handleGuess}
+            />
+        </div>
+    );
+}
+
+
+export function GameView({track, duration, onGuess}: {
     track: TrackInRoom;
     duration: number;
     onGuess: (correct: boolean, timeLeft: number, duration: number) => void;
-}
-
-export function GameView({track, duration, onGuess}: GameViewProps) {
+}) {
     const [gameState, setGameState] = useState({
         metadata: null as TrackMetadata | null,
         loading: true,
@@ -305,69 +363,6 @@ export function GameView({track, duration, onGuess}: GameViewProps) {
     );
 }
 
-
-interface GameManagerProps {
-    tracks: TrackInRoom[];
-    duration: number;
-    currentPlayer: Participant;
-}
-
-export function GameManager({
-                                tracks,
-                                duration,
-                                currentPlayer
-                            }: GameManagerProps) {
-    const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
-    const [scores, setScores] = useState<{ [key: string]: number }>({});
-    const [ready, setReady] = useState(false)
-
-    const handleGuess = (correct: boolean, timeRemaining: number, totalDuration: number) => {
-        if (correct) {
-            const pointsEarned = Math.ceil(
-                5 * (timeRemaining / totalDuration)
-            );
-            setScores(prev => ({
-                ...prev,
-                // @ts-ignore todo
-                [currentPlayer.id]: (prev[currentPlayer.id] || 0) + pointsEarned
-            }));
-        }
-
-        if (currentTrackIndex < tracks.length - 1) {
-            setCurrentTrackIndex(prev => prev + 1);
-        } else {
-        }
-    };
-
-    if (!ready) return (
-        <Card>
-            <Text>מוכנים?</Text>
-            <Button onClick={() => setReady(true)}>
-                בואו נצא לדרך!
-            </Button>
-        </Card>
-    )
-
-    return (
-        <div>
-            <Text>
-                Score:
-            </Text>
-            {
-                Object.entries(scores).map(([name, score]) => {
-                    return <Text>
-                        {name}: {score}
-                    </Text>
-                })
-            }
-            <GameView
-                track={tracks[currentTrackIndex]}
-                duration={duration}
-                onGuess={handleGuess}
-            />
-        </div>
-    );
-}
 
 function shuffleArray<T>(array: T[]): T[] {
     const shuffled = [...array];
