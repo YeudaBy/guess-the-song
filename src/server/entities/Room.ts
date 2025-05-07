@@ -43,6 +43,20 @@ export class Room {
 
     @Relations.toMany<Room, TrackInRoom>(() => TrackInRoom, 'roomId')
     tracks?: TrackInRoom[]
+
+    // static byHost = Filter.createCustom<Room, { userId: number }>(
+    // async ({userId}) => {
+    // console.log(userId)
+    // const participants = await repo(Participant).find({
+    //     where: {userId: userId},
+    // })
+    // console.log(participants)
+    // return {
+    //     hostId: {$in: participants.map((c) => c.id)},
+    // }
+    // }
+    // );
+
 }
 
 

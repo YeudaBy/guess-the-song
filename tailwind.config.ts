@@ -14,7 +14,7 @@ const config: Config = {
             colors: {
                 // Custom theme colors
                 primary: {
-                    50:  '#fdf3ff',
+                    50: '#fdf3ff',
                     100: '#fae8ff',
                     200: '#f3c7fd',
                     300: '#e89afb',
@@ -41,29 +41,29 @@ const config: Config = {
                 tremor: {
                     brand: {
                         faint: "#f5f3ff",  // primary-50
-                        muted: "#c4b5fd",  // primary-300
-                        subtle: "#ddd6fe", // primary-200
-                        DEFAULT: "#8b5cf6", // primary-500
-                        emphasis: "#6d28d9", // primary-700
+                        muted: "#e89afb",  // primary-300
+                        subtle: "#f3c7fd", // primary-200
+                        DEFAULT: "#c30ad8", // primary-500
+                        emphasis: "#830893", // primary-700
                         inverted: colors.white,
                     },
                     background: {
                         muted: colors.white,
                         subtle: "#f5f3ff", // primary-50
                         DEFAULT: "#ffffff",
-                        emphasis: "#4c1d95", // primary-900
+                        emphasis: "#4e0755", // primary-900
                     },
                     border: {
-                        DEFAULT: "#ddd6fe", // primary-200
+                        DEFAULT: "#f3c7fd", // primary-200
                     },
                     ring: {
-                        DEFAULT: "#ddd6fe", // primary-200
+                        DEFAULT: "#f3c7fd", // primary-200
                     },
                     content: {
-                        subtle: "#a78bfa", // primary-400
-                        DEFAULT: "#7c3aed", // primary-600
-                        emphasis: "#5b21b6", // primary-800
-                        strong: "#4c1d95", // primary-900
+                        subtle: "#da63f4", // primary-400
+                        DEFAULT: "#a008b3", // primary-600
+                        emphasis: "#65096e", // primary-800
+                        strong: "#4e0755", // primary-900
                         inverted: colors.white,
                     },
                 },

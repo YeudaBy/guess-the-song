@@ -4,10 +4,10 @@ import React, {Dispatch, SetStateAction, useEffect, useState} from 'react';
 import {repo} from 'remult';
 import {Room, RoomStatus} from '@/server/entities/Room';
 import {GameManager} from "@/app/room/[id]/GameView";
-import {Button, Callout, Flex, Text, TextInput, Title} from "@tremor/react";
+import {Button, Callout, Card, Flex, Text, TextInput, Title} from "@tremor/react";
 import {RiFireFill} from "@remixicon/react";
 import {Participant} from "@/server/entities/Participant";
-import {Card, VolumeSpinner} from "@/ui/components";
+import {VolumeSpinner} from "@/ui/components";
 import {useSession} from "next-auth/react";
 import {User} from "@/server/entities/User";
 import {useAutoAnimate} from "@formkit/auto-animate/react";
@@ -87,6 +87,7 @@ export default function RoomView({id}: { id: string }) {
         if (!room) return;
         console.log("start game")
         await updateRoomStatus(RoomStatus.InProgress)
+        navigator.vibrate([100, 50, 100])
     };
 
     const renderContent = () => {
@@ -114,6 +115,9 @@ export default function RoomView({id}: { id: string }) {
                     />
                 );
             case RoomStatus.InProgress:
+                if (!currentParticipant) {
+                    return
+                }
                 return (
                     <GameManager
                         room={room}
@@ -139,8 +143,10 @@ export default function RoomView({id}: { id: string }) {
                 roomCode={room.id.toString()}
                 participants={room.participants || []}
             />}
-            <Text className={"bg-tremor-background-emphasis text-white"}>{gameState || "test"}</Text>
             {renderContent()}
+
+            <Text
+                className={"bg-tremor-background-emphasis text-white text-sm absolute bottom-0"}>{gameState || "test"}</Text>
         </div>
     );
 }
@@ -237,6 +243,13 @@ function WaitingLobby({
             >
                 התחל משחק
             </Button>}
+
+            <Button onClick={() => {
+                navigator.share({url: location.href})
+            }}
+                    variant={"secondary"} size={"sm"} className={"mt-2"}>
+                שתף קישור הצטרפות
+            </Button>
         </Card>
     );
 }

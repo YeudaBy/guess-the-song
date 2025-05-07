@@ -4,12 +4,12 @@ import {repo} from "remult";
 import {Room} from "@/server/entities/Room";
 import React, {useState} from "react";
 import {useRouter} from "next/navigation";
-import {Button, Callout, Dialog, DialogPanel, Flex, NumberInput, Text, TextInput, Title} from "@tremor/react";
+import {Button, Callout, Card, Dialog, DialogPanel, Flex, NumberInput, Text, TextInput, Title} from "@tremor/react";
 import {RiErrorWarningFill, RiLockFill} from "@remixicon/react";
 import {Track} from "@/server/entities/Track";
 import {TrackMetadata} from "@/server/sp-fetcher";
 import {AnimatePresence, motion} from "framer-motion";
-import {SecondaryCard, VolumeSpinner} from "@/ui/components";
+import {VolumeSpinner} from "@/ui/components";
 import {useSession} from "next-auth/react";
 import {User} from "@/server/entities/User";
 
@@ -111,13 +111,13 @@ export function CreateRoom() {
     }
 
     return (
-        <SecondaryCard className={"w-full rounded-tl-none border shadow-lg border-tremor-brand-subtle"}>
+        <Card className={"w-full rounded-3xl border shadow-lg border-tremor-brand-subtle"}>
 
             <form onSubmit={e => {
                 e.preventDefault()
                 create()
             }} className={"flex flex-col gap-3 text-start"}>
-                <Title className={"text-center text-white"}>צור חדר חדש</Title>
+                <Title className={"text-center"}>צור חדר חדש</Title>
                 <div>
                     <NumberInput
                         min={3}
@@ -126,7 +126,7 @@ export function CreateRoom() {
                         value={songDuration}
                         onValueChange={setSongDuration}
                     />
-                    <Text className={"text-sm text-white"}>משך שיר (בשניות)</Text>
+                    <Text className={"text-sm"}>משך שיר (בשניות)</Text>
                 </div>
 
                 <div>
@@ -137,7 +137,7 @@ export function CreateRoom() {
                         value={limit}
                         onValueChange={setLimit}
                     />
-                    <Text className={"text-sm text-white"}>מספר שירים במשחק</Text>
+                    <Text className={"text-sm"}>מספר שירים במשחק</Text>
                 </div>
 
                 <Flex className={"gap-4"}>
@@ -150,7 +150,7 @@ export function CreateRoom() {
                     />
                     <Button variant={"secondary"}
                             size={"sm"}
-                            className={"gap-2 text-white disabled:text-white"}
+                            className={"gap-2 disabled:text-white"}
                             disabled={!password.length}
                             type={"button"}
                             onClick={() => navigator.clipboard.writeText(password)}>
@@ -198,6 +198,6 @@ export function CreateRoom() {
                     </Flex>
                 </DialogPanel>
             </Dialog>
-        </SecondaryCard>
+        </Card>
     )
 }

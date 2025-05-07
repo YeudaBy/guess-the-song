@@ -3,7 +3,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {Track} from '@/server/entities/Track';
 import {Participant} from "@/server/entities/Participant";
-import {Button, Card, Icon, Text, Title} from "@tremor/react";
+import {Card, Icon, Text, Title} from "@tremor/react";
 import {RiCheckboxCircleFill, RiCloseCircleFill, RiQuestionMark} from "@remixicon/react";
 import {TrackMetadata} from "@/server/sp-fetcher";
 import {Room, TrackInRoom} from "@/server/entities/Room";
@@ -15,7 +15,7 @@ export function GameManager({room, currentPlayer}: {
 }) {
     const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
     const [scores, setScores] = useState<{ [key: string]: number }>({});
-    const [ready, setReady] = useState(false)
+    const [ready, setReady] = useState(3)
 
     console.log({room, currentPlayer})
 
@@ -27,7 +27,7 @@ export function GameManager({room, currentPlayer}: {
             setScores(prev => ({
                 ...prev,
                 // @ts-ignore todo
-                [currentPlayer.id]: (prev[currentPlayer.id] || 0) + pointsEarned
+                [currentPlayer.name]: (prev[currentPlayer.naem] || 0) + pointsEarned
             }));
         }
 
@@ -37,12 +37,21 @@ export function GameManager({room, currentPlayer}: {
         }
     };
 
-    if (!ready) return (
-        <Card>
-            <Text>מוכנים?</Text>
-            <Button onClick={() => setReady(true)}>
-                בואו נצא לדרך!
-            </Button>
+    useEffect(() => {
+        if (ready <= 0) return;
+
+        const timer = setTimeout(() => {
+            setReady(prev => prev - 1);
+        }, 1000);
+
+        return () => clearTimeout(timer);
+    }, [ready]);
+
+    if (ready !== 0) return (
+        <Card className={"flex flex-col items-center"}>
+            <Title>מוכנים?</Title>
+
+            <Text className={"text-9xl"}>{ready}</Text>
         </Card>
     )
 
@@ -259,8 +268,8 @@ export function GameView({track, duration, onGuess}: {
     }, [cleanup, track, gameState.timeLeft, duration, onGuess]);
 
     return (
-        <Card className="h-[100dvh] flex flex-col overflow-hidden">
-            <div className="flex-1 flex flex-col p-4 overflow-y-auto">
+        <Card className="h-full w-full flex flex-col">
+            <div className="flex-1 flex flex-col p-2">
                 {gameState.loading ? (
                     <div className="flex-1 flex justify-center items-center">
                         <Text>טוען משחק...</Text>
@@ -273,13 +282,13 @@ export function GameView({track, duration, onGuess}: {
                     <>
                         <div className="flex justify-between items-center mb-4">
                             <Title>נחש את השיר</Title>
-                            <Text className="text-lg font-semibold animate-pulse">
+                            <Text className="text-lg font-semibold">
                                 {gameState.timeLeft} שניות
                             </Text>
                         </div>
 
                         {gameState.metadata?.imageUrl && (
-                            <div className="relative w-full aspect-[2/1] mb-4">
+                            <div className="relative w-full aspect-[1/1] mb-4">
                                 <div
                                     className={`
                     absolute inset-0 rounded-xl overflow-hidden
@@ -293,7 +302,7 @@ export function GameView({track, duration, onGuess}: {
                                         className={`
                       w-full h-full object-cover
                       transition-all duration-1000
-                      ${gameState.showHint ? 'blur-md scale-105' : 'blur-none scale-100'}
+                      ${gameState.showHint ? 'blur-sm scale-105' : 'blur-none scale-100'}
                     `}
                                     />
                                 </div>

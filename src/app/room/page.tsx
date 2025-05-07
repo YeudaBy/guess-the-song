@@ -62,20 +62,14 @@ export default function RoomPage() {
         }
     }, [])
 
-    useEffect(() => {
-        if (!user) return
-        localStorage.setItem("uid", user.id.toString())
-        participantRepo.find({
-            where: {
-                user: user
-            },
-            include: {
-                room: true
-            }
-        }).then(r => {
-            setRooms(r.map(p => p.room).filter(r => !!r))
-        })
-    }, [user]);
+    // useEffect(() => {
+    //     if (!user) return
+    //     localStorage.setItem("uid", user.id.toString())
+    //     console.log(user.id)
+    //     roomRepo.find({
+    //         where: Room.byHost({userId: user.id})
+    //     }).then(setRooms)
+    // }, [user]);
 
     return <AuthWrapper>
         <div className={"m-4"}>
@@ -83,12 +77,13 @@ export default function RoomPage() {
 
 
             <Grid className={'mt-8'}>
-                <Title>
+                {/*// todo*/}
+                {!!rooms?.length && <Title>
                     חדרים שיצרת:
-                </Title>
+                </Title>}
                 {
-                    rooms?.map(room => <Card
-                        key={room.id}
+                    rooms?.map((room, i) => <Card
+                        key={i}
                         decoration={"right"}
                         decorationColor={roomStatusColor(room.status)}
                         className={"text-start"}>

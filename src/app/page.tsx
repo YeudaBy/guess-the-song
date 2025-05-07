@@ -7,5 +7,5 @@ export default function HomePage() {
 }
 
 export const viewport: Viewport = {
-    themeColor: '#8b5cf6',
+    themeColor: '#a008b3',
 }

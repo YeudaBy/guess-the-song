@@ -1,8 +1,10 @@
 "use client";
 
 import {signIn, signOut, useSession} from "next-auth/react";
-import {Text, Title} from "@tremor/react";
-import {Button, Card} from "@/ui/components";
+import {Button, Card, Text, Title} from "@tremor/react";
+import Image from "next/image";
+import React from "react";
+import Link from "next/link";
 
 export default function AuthWrapper({children}: { children: React.ReactNode }) {
     const {data: session, status} = useSession();
@@ -24,15 +26,25 @@ export default function AuthWrapper({children}: { children: React.ReactNode }) {
         );
     }
 
+    console.log(session.user?.image)
+
     return (
         <div>
-            <div className="flex justify-end p-4 gap-3 relative items-center">
-                <img src={session.user?.image || ""} alt={"User image"}
-                     className={"h-10 w-10 rounded-full"}/>
-                <Text className={"text-lg"}>{session.user?.name}</Text>
-                {/*// @ts-ignore todo*/}
-                <Button variant={"outline"} onClick={() => signOut()}
-                        className="">התנתק</Button>
+            <div className="flex justify-end p-1 px-2 gap-3 relative items-center rounded-full bg-tremor-brand-faint m-2">
+                <Link href={"/"} className={"flex gap-1 rounded-full bg-white p-1 justify-center items-center px-4 border"}>
+                    <Image src={"/images/logo.png"} alt={""} width={38} height={38}/>
+                    <Text className={"font-extrabold text-lg"}>
+                        מי שישמע!
+                    </Text>
+                </Link>
+
+                <div className={"grow"}/>
+
+                <Image src={session.user?.image || ""} alt={"User image"}
+                       className={"rounded-full"} width={24} height={24}/>
+                <Text className={"text-md"}>{session.user?.name}</Text>
+                <Button variant={"secondary"} size={"xs"} onClick={() => signOut()}
+                        className="rounded-full">התנתק</Button>
             </div>
             {children}
         </div>
