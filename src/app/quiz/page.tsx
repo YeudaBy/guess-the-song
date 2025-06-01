@@ -8,6 +8,7 @@ import {Button, Card, Grid, Text, TextInput, Title} from "@tremor/react";
 import {useRouter} from "next/navigation";
 import AuthWrapper from "@/ui/AuthReq";
 import Link from "next/link";
+import Image from "next/image";
 
 const qRepo = repo(Quiz)
 
@@ -40,11 +41,25 @@ export default function QuizPage() {
             <CreateQuiz/>
 
 
-            <Grid className={"gap-2 my-2"} numItems={2} numItemsSm={3} numItemsMd={4} numItemsLg={5}>
+            <Grid className={"gap-2 my-2"} numItems={1} numItemsSm={2} numItemsMd={3} numItemsLg={4}>
                 {topQuizzes?.map(q => <Link href={`/quiz/${q.id}`} key={q.id}>
-                    <Card>
-                        <Title>{q.name}</Title>
-                        <Text>{q.visits} ביקורים, {q.completes} השלמות, {q.tracks.length} רצועות</Text>
+                    <Card className={"text-right flex"}>
+                        {q.tracks.length && <div className={"relative w-16 h-12"}>
+                            {q.tracks.map((t) => t.album.images[0]).slice(0, 10).slice(0, 4).map((image, index) =>
+                                <Image key={index} src={image.url} alt={"arts"}
+                                       height={50}
+                                       width={50}
+                                       style={{
+                                           right: index * 2,
+                                           rotate: `-${index * 2}deg`,
+                                           bottom: index * 2
+                                       }}
+                                       className={`absolute`}/>)}
+                        </div>}
+                        <div>
+                            <Title className={"text-xl"}>{q.name}</Title>
+                            <Text className={"font-light"}>{q.visits} ביקורים, {q.completes} השלמות, {q.tracks.length} רצועות</Text>
+                        </div>
                     </Card>
                 </Link>)}
             </Grid>

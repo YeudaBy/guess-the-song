@@ -25,6 +25,11 @@ export default function ShowQuiz() {
         qRepo.findId(id as string).then(setQuiz)
     }, []);
 
+    useEffect(() => {
+        if (!quiz) return
+        qRepo.update(quiz?.id, {visits: quiz.visits + 1})
+    }, [quiz]);
+
 
     if (!quiz) {
         return <div className={"w-screen h-screen flex justify-center items-center"}>
