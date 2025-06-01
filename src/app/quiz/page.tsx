@@ -58,7 +58,7 @@ function CreateQuiz() {
         })
         setQuiz(n)
         setLoading(false)
-        router.push(`/${n.id}/edit`)
+        router.push(`/quiz/${n.id}/edit`)
     }
 
     return <Card className={"text-right"}>
