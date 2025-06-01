@@ -1,21 +1,27 @@
 "use client"
 
 import {useEffect} from "react";
-import {TextInput} from "@tremor/react";
-import {useSupabase} from "@/server/supabase";
+import {repo} from "remult";
+import {Track} from "@/server/entities/Track";
 
+
+const trackRepo = repo(Track)
 
 export default function () {
-    const {data, sendData, setChannelName} = useSupabase()
 
     useEffect(() => {
-        setChannelName("בדיקה")
+        trackRepo.find({
+            orderBy: {
+                randomValue: "asc" // this makes it random!
+            },
+            limit: 3
+        }).then(console.log)
     }, []);
 
     return (
         <>
-            <TextInput onValueChange={sendData}/>
-            {data}
+            {/*<TextInput onValueChange={sendData}/>*/}
+            {/*{data}*/}
         </>
     )
 }

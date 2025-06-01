@@ -40,11 +40,13 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" dir={"rtl"}>
-        <body className={`min-h-screen 
+        <body className={`min-h-screen bg-tremor-background
         ${mPlusRounded.className} ${geistMono.variable}`}>
-        <ClientLayout>
-            {children}
-        </ClientLayout>
+        <div className={"page-border rounded-xl"}>
+            <ClientLayout>
+                {children}
+            </ClientLayout>
+        </div>
         </body>
         </html>
     );

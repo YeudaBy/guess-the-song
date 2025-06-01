@@ -258,3 +258,7 @@ export const SecondaryCard = ({children, className}: {
     </div>
 }
 
+export function Spinner() {
+    return <div className="w-5 h-5 border-2 border-t-tremor-brand/50 border-tremor-brand rounded-full animate-spin"/>
+}
+

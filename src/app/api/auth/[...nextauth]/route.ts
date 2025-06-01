@@ -1,8 +1,8 @@
-import NextAuth, {getServerSession} from "next-auth";
+import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import {api} from "@/server/api";
 import {User} from "@/server/entities/User";
-import {remult, UserInfo} from "remult";
+import SpotifyProvider from "next-auth/providers/spotify";
 
 const SECRET_KEY = process.env.SECRET_KEY || "your-secret-key";
 
@@ -12,6 +12,10 @@ const handler = NextAuth({
             clientId: process.env.GOOGLE_CLIENT_ID || "",
             clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
         }),
+        SpotifyProvider({
+            clientId: process.env.SPOTIFY_CLIENT_ID || "",
+            clientSecret: process.env.SPOTIFY_CLIENT_SECRET || ""
+        })
     ],
     secret: SECRET_KEY,
     callbacks: {

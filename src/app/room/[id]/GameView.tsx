@@ -7,11 +7,13 @@ import {Card, Icon, Text, Title} from "@tremor/react";
 import {RiCheckboxCircleFill, RiCloseCircleFill, RiQuestionMark} from "@remixicon/react";
 import {TrackMetadata} from "@/server/sp-fetcher";
 import {Room, TrackInRoom} from "@/server/entities/Room";
+import {repo} from "remult";
 
 
-export function GameManager({room, currentPlayer}: {
+export function GameManager({room, currentPlayer, onGameEnds}: {
     room: Room
     currentPlayer: Participant;
+    onGameEnds: () => void
 }) {
     const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
     const [scores, setScores] = useState<{ [key: string]: number }>({});
@@ -34,10 +36,12 @@ export function GameManager({room, currentPlayer}: {
         if (currentTrackIndex < room.tracks!.length - 1) {
             setCurrentTrackIndex(prev => prev + 1);
         } else {
+            onGameEnds()
         }
     };
 
     useEffect(() => {
+        // start-up countdown
         if (ready <= 0) return;
 
         const timer = setTimeout(() => {
@@ -84,6 +88,7 @@ export function GameView({track, duration, onGuess}: {
 }) {
     const [gameState, setGameState] = useState({
         metadata: null as TrackMetadata | null,
+        audioSrc: "",
         loading: true,
         timeLeft: duration,
         options: [] as string[],
@@ -94,6 +99,17 @@ export function GameView({track, duration, onGuess}: {
         isAudioLoaded: false,
         error: null as string | null
     });
+
+    useEffect(() => {
+        console.log(gameState)
+    }, [gameState]);
+
+    useEffect(() => {
+        setGameState(prevState => ({
+            ...prevState,
+            audioSrc: prevState.metadata?.audioPreview || ""
+        }))
+    }, [gameState.metadata]);
 
     const audioRef = useRef<HTMLAudioElement>(null);
     const timerRef = useRef<NodeJS.Timeout>();
@@ -120,10 +136,11 @@ export function GameView({track, duration, onGuess}: {
     useEffect(() => {
         const prepare = async () => {
             try {
-                setGameState(prev => ({...prev, loading: true, error: null}));
+                setGameState(prev => ({...prev, loading: true, error: null, metadata: track.metadata}));
 
-
-                const randomNames = await Track.getRandom(5);
+                const randomNames = await repo(Track).find({
+                    orderBy: {randomValue: "asc"}, limit: 5
+                })
 
                 const uniqueOptions = [...new Set([track.track?.name, ...randomNames.map((e: any) => e.name)])];
                 const shuffledOptions = uniqueOptions
@@ -132,7 +149,6 @@ export function GameView({track, duration, onGuess}: {
 
                 setGameState(prev => ({
                     ...prev,
-                    metadata: track.metadata,
                     options: shuffledOptions,
                     loading: false,
                     timeLeft: duration,
@@ -164,7 +180,7 @@ export function GameView({track, duration, onGuess}: {
 
     // Audio setup effect
     useEffect(() => {
-        if (!gameState.metadata?.audioPreview || !audioRef.current) return;
+        if (!gameState.audioSrc || !audioRef.current) return;
 
         const audio = audioRef.current;
 
@@ -181,26 +197,16 @@ export function GameView({track, duration, onGuess}: {
                 });
         };
 
-        const handleEnded = () => {
-            // Only restart if not revealing answer
-            if (!gameState.isRevealing) {
-                audio.currentTime = 0;
-                audio.play().catch(console.error);
-            }
-        };
-
-        audio.src = gameState.metadata.audioPreview;
+        audio.src = gameState.audioSrc;
         audio.load();
         audio.addEventListener('canplay', handleCanPlay);
-        audio.addEventListener('ended', handleEnded);
 
         return () => {
             audio.removeEventListener('canplay', handleCanPlay);
-            audio.removeEventListener('ended', handleEnded);
             audio.pause();
             audio.currentTime = 0;
         };
-    }, [gameState.metadata?.audioPreview, gameState.isRevealing]);
+    }, [gameState.audioSrc]);
 
     const startTimer = useCallback(() => {
         if (timerRef.current) clearInterval(timerRef.current);
@@ -234,7 +240,7 @@ export function GameView({track, duration, onGuess}: {
             window.navigator.vibrate(1000);
         }
 
-        soundRefs.wrong.current?.play();
+        // soundRefs.wrong.current?.play(); todo
 
         setTimeout(() => {
             setGameState(prev => ({...prev, shouldAdvance: true}));
@@ -243,6 +249,7 @@ export function GameView({track, duration, onGuess}: {
     }, [cleanup, track, duration, onGuess]);
 
     const handleSubmitGuess = useCallback((option: string) => {
+        const audio = audioRef.current
         cleanup();
         const isCorrect = option === track.track!.name;
 
@@ -256,8 +263,19 @@ export function GameView({track, duration, onGuess}: {
             window.navigator.vibrate(isCorrect ? [100, 100, 100] : [500]);
         }
 
-        const soundRef = isCorrect ? soundRefs.correct : soundRefs.wrong;
-        soundRef.current?.play();
+        // const soundRef = isCorrect ? soundRefs.correct : soundRefs.wrong;
+        const soundSrc = isCorrect ? "/sounds/right.wav" : "/sounds/wrong.wav";
+        setGameState(prevState => ({
+            ...prevState,
+            audioSrc: soundSrc
+        }))
+        audioRef.current?.play();
+        audioRef.current?.addEventListener("ended", () => {
+            setGameState(prevState => ({
+                ...prevState,
+                audioSrc: ""
+            }))
+        })
 
         const finalTimeLeft = gameState.timeLeft;
 
@@ -268,7 +286,10 @@ export function GameView({track, duration, onGuess}: {
     }, [cleanup, track, gameState.timeLeft, duration, onGuess]);
 
     return (
-        <Card className="h-full w-full flex flex-col">
+        <Card style={{
+            background: hexToRgba(gameState.metadata?.baseColor || '#000000', 50),
+            transition: 'background .3s ease'
+        }} className={`h-full w-full flex flex-col`}>
             <div className="flex-1 flex flex-col p-2">
                 {gameState.loading ? (
                     <div className="flex-1 flex justify-center items-center">
@@ -368,6 +389,12 @@ export function GameView({track, duration, onGuess}: {
             <audio ref={audioRef}/>
             <audio ref={soundRefs.correct} src="/sounds/right.wav"/>
             <audio ref={soundRefs.wrong} src="/sounds/wrong.wav"/>
+
+
+            <pre
+                className={"bg-tremor-background-emphasis text-white fixed bottom-5 right-0 left-0 text-xs break-words"}>
+                {JSON.stringify(gameState)}
+            </pre>
         </Card>
     );
 }
@@ -380,4 +407,13 @@ function shuffleArray<T>(array: T[]): T[] {
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     return shuffled;
+}
+
+
+function hexToRgba(hex: string, alpha: number): string {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    const a = +(alpha / 255).toFixed(2)
+    return `rgba(${r}, ${g}, ${b}, ${a})`
 }

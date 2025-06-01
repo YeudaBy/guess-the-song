@@ -18,7 +18,7 @@ export default function AuthWrapper({children}: { children: React.ReactNode }) {
                     <Title className="text-xl font-bold mb-4">התחברות</Title>
                     <Text className="mb-4">עליך להתחבר כדי להמשיך</Text>
                     {/*// @ts-ignore todo*/}
-                    <Button onClick={() => signIn("google")} className=" w-full">
+                    <Button onClick={() => signIn()} className=" w-full">
                         התחבר עם Google
                     </Button>
                 </Card>
@@ -31,7 +31,7 @@ export default function AuthWrapper({children}: { children: React.ReactNode }) {
     return (
         <div>
             <div className="flex justify-end p-1 px-2 gap-3 relative items-center rounded-full bg-tremor-brand-faint m-2">
-                <Link href={"/"} className={"flex gap-1 rounded-full bg-white p-1 justify-center items-center px-4 border"}>
+                <Link href={"/"} className={"flex gap-1 rounded-full p-1 justify-center items-center px-4 border"}>
                     <Image src={"/images/logo.png"} alt={""} width={38} height={38}/>
                     <Text className={"font-extrabold text-lg"}>
                         מי שישמע!

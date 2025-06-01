@@ -1,4 +1,4 @@
-import {BackendMethod, dbNamesOf, Entity, Fields, Relations, SqlDatabase} from "remult";
+import {BackendMethod, Entity, Fields, Relations} from "remult";
 import {User} from "@/server/entities/User";
 import {fetchTrackData} from "@/server/sp-fetcher";
 
@@ -27,6 +27,15 @@ export class Track {
     @Relations.toOne(() => User)
     byUser?: User
 
+    @Fields.string()
+    category?: string
+
+    @Fields.number({
+        sqlExpression: () => 'random()',
+        includeInApi: false
+    })
+    randomValue!: number
+
     @BackendMethod({allowed: true})
     async getMetadata() {
         return fetchTrackData(this.spId)
@@ -36,18 +45,5 @@ export class Track {
     static async getMetadata(spId: string) {
         return fetchTrackData(spId)
     }
-
-    @BackendMethod({allowed: true})
-    static randomApi = async (count: number) => {
-        const tracks = await dbNamesOf(Track)
-        const sql = SqlDatabase.getDb()
-        const r = await sql.execute(`SELECT id, name
-                                     FROM ${tracks}
-                                     ORDER BY RANDOM() LIMIT ${count}`)
-        return r.rows
-    }
-
-    static getRandom = async (count: number) => {
-        return fetch(`/api/random?count=${count}`).then(r => r.json())
-    }
 }
+

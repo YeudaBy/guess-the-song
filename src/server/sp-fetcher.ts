@@ -1,19 +1,35 @@
 const playlistId = '6SvyiNXrMfoj4QXp3aiCa4';
 const trackId = "11Q3W4kReoMTUWuc8BQyLC"
 
-export type TrackMetadata = {
+type BaseEntityMetadata = {
     name: string
     id: string,
-    artist: string,
-    audioPreview: string
+    subtitle?: string,
     imageUrl?: string
-    explicit: boolean
+    explicit: boolean,
+    baseColor?: string,
+    lastFmTag?: string
 }
 
-export const fetchTrackData = async (playlistId: string): Promise<TrackMetadata | undefined> => {
-    console.log(playlistId)
+export type TrackMetadata = BaseEntityMetadata & {
+    audioPreview?: string
+}
+
+export type PlaylistMetadata = BaseEntityMetadata & {
+    tracks: TrackMetadata[],
+}
+
+// export enum SpotifyEntityType {
+//     track = 'track',
+//     playlist = 'playlist'
+// }
+
+export const fetchTrackData = async (entityId: string): Promise<TrackMetadata | undefined> => {
+    console.log({entityId})
+    const url = `https://open.spotify.com/embed/track/${entityId}` // todo hardcoded type
+    console.log(url)
     try {
-        const htmlContent = await fetch(`https://open.spotify.com/embed/track/${playlistId}`, {
+        const htmlContent = await fetch(url, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -33,124 +49,82 @@ export const fetchTrackData = async (playlistId: string): Promise<TrackMetadata 
         const entity = jsonData.props.pageProps.state.data.entity
         if (!entity) return
 
+        console.log(entity)
+        console.log(entity.visualIdentity)
 
-        const obj: TrackMetadata = {
-            id: entity.id,
-            name: entity.name,
-            artist: entity.artists?.map((a: any) => a.name).join(" ,"),
-            audioPreview: entity.audioPreview.url,
-            imageUrl: entity.visualIdentity.image[0].url,
-            explicit: entity.isExplicit
+        let obj: PlaylistMetadata | TrackMetadata;
+
+        switch (true) {
+            // todo
+            default: {
+                obj = spotifyTrackToTrackMetadata(entity)
+                break
+            }
+            // case SpotifyEntityType.playlist: {
+            //     obj = {
+            //         id: entity.id,
+            //         name: entity.name,
+            //         subtitle: entity.subtitle,
+            //         explicit: entity.isExplicit,
+            //         imageUrl: entity.visualIdentity?.image?.pop()?.url,
+            //         tracks: entity.trackList
+            //             ?.filter((t: any) => !!t.audioPreview)
+            //             ?.map(spotifyTrackToTrackMetadata)
+            //     }
+            //     break
+            // }
         }
+        obj.baseColor = rgbaToHex(entity?.visualIdentity?.backgroundBase)
+        obj.lastFmTag = await fetchLstFmTags(obj.name, obj.subtitle || "")
+
         console.log(obj)
         return obj
+
     } catch (error) {
         console.error("Error fetching playlist data:", error);
         return undefined;
     }
 }
 
-
-const fetchMetadata = (trackId: string) => {
-}
-
-// fetchTrackData(trackId).then(tracks => {
-//     console.log('Tracks with audio previews:', tracks);
-// });
-
-
-const fetchPlaylistData = async (playlistId: string) => {
-    try {
-        // Fetch the playlist embed page HTML content
-        const htmlContent = await fetch(`https://open.spotify.com/embed/playlist/${playlistId}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        }).then(res => res.text());
-
-        // Regex to extract the JSON data from the <script> tag with id "__NEXT_DATA__"
-        const regex = /<script id="__NEXT_DATA__" type="application\/json">(.+?)<\/script>/;
-        const match = htmlContent.match(regex);
-
-        if (match) {
-            // Parse the JSON data from the matched content
-            const jsonData = JSON.parse(match[1]);
-
-            // Check if the track list exists and contains items with audio previews
-            if (jsonData?.props?.pageProps?.state?.data?.entity?.trackList) {
-                // Filter tracks that have an audio preview
-                return jsonData.props.pageProps.state.data.entity.trackList.filter((item: any) => item.audioPreview != null);
-            } else {
-                console.log("No track list found or no audio preview available.");
-                return [];
-            }
-        } else {
-            console.log("No JSON data found in the page.");
-            return [];
-        }
-    } catch (error) {
-        console.error("Error fetching playlist data:", error);
-        return [];
+function spotifyTrackToTrackMetadata(entity: any): TrackMetadata {
+    return {
+        id: entity.id || entity.uid,
+        name: entity.name || entity.title,
+        subtitle: entity.artists?.map((a: any) => a.name)?.join(" ,") || entity.subtitle,
+        audioPreview: entity.audioPreview.url,
+        imageUrl: entity.visualIdentity?.image[0]?.url,
+        explicit: entity.isExplicit
     }
 }
 
-// fetchPlaylistData(playlistId).then(tracks => {
-//     console.log('Tracks with audio previews:', tracks);
-// });
+type RGBA = {
+    red: number;
+    green: number;
+    blue: number;
+    alpha?: number;
+};
+
+function rgbaToHexWithAlpha({red, green, blue, alpha = 255}: RGBA): string {
+    const toHex = (value: number) => value.toString(16).padStart(2, '0');
+    return `#${toHex(red)}${toHex(green)}${toHex(blue)}${toHex(alpha)}`;
+}
+
+function rgbaToHex({red, green, blue}: RGBA): string {
+    const toHex = (value: number) => value.toString(16).padStart(2, '0');
+    return `#${toHex(red)}${toHex(green)}${toHex(blue)}`;
+}
 
 
-//
-// // פונקציה לקבלת אסימון גישה
-// async function getAccessToken() {
-//     const response = await fetch('https://accounts.spotify.com/api/token', {
-//         method: 'POST',
-//         headers: {
-//             'Content-Type': 'application/x-www-form-urlencoded',
-//             'Authorization': 'Basic ' + btoa(process.env.SP_CLIENT_ID + ':' + process.env.SP_CLIENT_SECRET)
-//         },
-//         body: 'grant_type=client_credentials'
-//     });
-//     const data = await response.json();
-//     return data.access_token;
-// }
-//
-// // פונקציה לקבלת כל השירים מהפלייליסט
-// async function getAllTracks(accessToken, playlistId) {
-//     let tracks = [];
-//     let url = `https://api.spotify.com/v1/playlists/${playlistId}/tracks`;
-//     while (url) {
-//         const response = await fetch(url, {
-//             headers: {
-//                 'Authorization': 'Bearer ' + accessToken
-//             }
-//         });
-//         console.log(response.ok)
-//         if (!response.ok) {
-//             console.log(response.statusText)
-//         }
-//         const data = await response.json();
-//         tracks = tracks.concat(data.items);
-//         url = data.next;
-//     }
-//     return tracks;
-// }
-//
-// // פונקציה לספירת השירים עם preview_url
-// function countTracksWithPreview(tracks) {
-//     return tracks.filter(item => item.track && item.track.preview_url).length;
-// }
-//
-// // הפונקציה הראשית
-// async function main() {
-//     try {
-//         const accessToken = await getAccessToken();
-//         const tracks = await getAllTracks(accessToken, playlistId);
-//         const previewCount = countTracksWithPreview(tracks);
-//         console.log(`מתוך ${tracks.length} שירים בפלייליסט, ${previewCount} מהם כוללים preview_url.`);
-//     } catch (error) {
-//         console.error('שגיאה:', error);
-//     }
-// }
-//
-// // main();
+// fetchTrackData(trackId, SpotifyEntityType.track).then(console.log)
+// fetchTrackData(playlistId, SpotifyEntityType.playlist).then(console.log)
+
+async function fetchLstFmTags(track: string, artist: string): Promise<string | undefined> {
+
+    const url = `https://ws.audioscrobbler.com/2.0/?method=track.gettoptags&api_key=c3c5c93d9f8a055ded7294e69ca869e8&artist=${artist}&track=${track}&user=RJ&format=json`
+
+    const res = await fetch(url)
+    const json: { toptags: { tag: { name: string }[] } } = await res.json()
+    console.log(json)
+
+    return json.toptags?.tag?.map(t => t.name)?.at(0)
+}

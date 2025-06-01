@@ -5,14 +5,15 @@ import {repo} from "remult";
 import {Track} from "@/server/entities/Track";
 import {useEffect, useState} from "react";
 import {Button, Callout, Card, Flex, TextInput} from "@tremor/react";
-import {TrackMetadata} from "@/server/sp-fetcher";
+import {PlaylistMetadata, TrackMetadata} from "@/server/sp-fetcher";
 import {LoadingSpinner} from "@/ui/components";
 
 const trackRepo = repo(Track)
 
 export default function AddTracks() {
     const [spId, setSpId] = useState<string>()
-    const [metadata, setMetadata] = useState<TrackMetadata>()
+    const [trackMetadata, setTrackMetadata] = useState<TrackMetadata>()
+    const [playlistMetadata, setPlaylistMetadata] = useState<PlaylistMetadata>()
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string>()
 
@@ -21,10 +22,14 @@ export default function AddTracks() {
         try {
             const trackId = extractSpotifyTrackId(spId)
             setLoading(true)
-            Track.getMetadata(trackId)
-                .then(setMetadata)
-                .catch(setError)
-                .finally(() => setLoading(false))
+            if (spId.includes("/playlist")) {
+
+            } else {
+                Track.getMetadata(trackId)
+                    .then(setTrackMetadata)
+                    .catch(setError)
+                    .finally(() => setLoading(false))
+            }
         } catch (e) {
             setError(e?.toString())
         }
@@ -36,14 +41,15 @@ export default function AddTracks() {
             setError("שיר זה כבר נמצא במאגר :)")
             return
         }
-        if (!metadata?.name || !metadata.audioPreview) {
+        if (!trackMetadata?.name || !trackMetadata.audioPreview) {
             setError("מטעמי זכויות יוצרים אין לנו את היכולת להציג שיר זה")
             return
         }
         await trackRepo.insert({
-            name: metadata?.name,
-            artist: metadata?.artist,
+            name: trackMetadata?.name,
+            artist: trackMetadata?.subtitle,
             spId: extractSpotifyTrackId(spId!),
+            category: trackMetadata.lastFmTag
         })
         location.reload()
     }
@@ -51,24 +57,27 @@ export default function AddTracks() {
     return (<div className={"max-w-3xl m-auto px-4"}>
         <Flex>
             <TextInput className={"max-w-full m-auto my-4"}
-                       value={spId} onValueChange={setSpId} placeholder={"מזהה בספוטיפיי:"} disabled={loading}/>
+                       value={spId} onValueChange={setSpId} placeholder={"קישור לספוטיפיי:"} disabled={loading}/>
         </Flex>
 
         {!!error && <Callout title={error} color={"red"}/>}
         {loading && <LoadingSpinner/>}
 
-        {!!metadata && <form onSubmit={e => {
+        {!!trackMetadata && <form onSubmit={e => {
             e.preventDefault();
             save()
         }}>
             <Card
                 className={"w-full gap-2 m-auto my-4 flex flex-col justify-center items-center bg-tremor-brand-faint"}>
-                <img src={metadata.imageUrl!} alt={metadata.name} className={"max-w-sm aspect-square rounded-xl"}/>
+                <img src={trackMetadata.imageUrl!} alt={trackMetadata.name}
+                     className={"max-w-sm aspect-square rounded-xl"}/>
 
-                <TextInput value={metadata.name}
-                           onValueChange={n => setMetadata(prevState => ({...prevState!, name: n}))}/>
-                <TextInput value={metadata.artist}
-                           onValueChange={a => setMetadata(prevState => ({...prevState!, artist: a}))}/>
+                <TextInput value={trackMetadata.name}
+                           onValueChange={n => setTrackMetadata(prevState => ({...prevState!, name: n}))}/>
+                <TextInput value={trackMetadata.subtitle}
+                           onValueChange={a => setTrackMetadata(prevState => ({...prevState!, subtitle: a}))}/>
+                <TextInput value={trackMetadata.lastFmTag} placeholder={"קטגוריה"}
+                           onValueChange={a => setTrackMetadata(prevState => ({...prevState!, lastFmTag: a}))}/>
 
                 <Button type={"submit"}>
                     שמירה
@@ -80,12 +89,12 @@ export default function AddTracks() {
 }
 
 function extractSpotifyTrackId(url: string): string {
-    const regex = /^https:\/\/open\.spotify\.com\/track\/([a-zA-Z0-9]{22})(?:\?.*)?$/;
+    const regex = /^https:\/\/open\.spotify\.com\/(track|playlist)\/([a-zA-Z0-9]{22})(?:\?.*)?$/;
     const match = url.match(regex);
 
     if (!match) {
         throw new Error("הקישור אינו לטראק תקני של Spotify.");
     }
 
-    return match[1];
+    return match[2];
 }

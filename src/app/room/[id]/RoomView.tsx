@@ -44,6 +44,10 @@ export default function RoomView({id}: { id: string }) {
     }
 
     useEffect(() => {
+        console.log(gameState)
+    }, [gameState]);
+
+    useEffect(() => {
         // Load room
         (async () => {
             const _room = await roomRepo.findFirst({id: Number(id)}, {
@@ -122,6 +126,7 @@ export default function RoomView({id}: { id: string }) {
                     <GameManager
                         room={room}
                         currentPlayer={currentParticipant!}
+                        onGameEnds={() => updateRoomStatus(RoomStatus.Completed)}
                     />
                 );
             case RoomStatus.Completed:
@@ -241,7 +246,7 @@ function WaitingLobby({
                 onClick={onStartGame}
                 // disabled={participants.length < 2}
             >
-                התחל משחק
+                {(!!participants?.length && participants.length > 1) ? "התחל משחק" : "שחק סולו"}
             </Button>}
 
             <Button onClick={() => {
