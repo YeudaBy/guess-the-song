@@ -6,11 +6,13 @@ import {Quiz} from "@/server/entities/Quiz";
 import {useSession} from "next-auth/react";
 import {Button, Card, Grid, Text, TextInput, Title} from "@tremor/react";
 import {useRouter} from "next/navigation";
+import AuthWrapper from "@/ui/AuthReq";
+import Link from "next/link";
 
 const qRepo = repo(Quiz)
 
 export default function QuizPage() {
-    const [myQuizzes, setMyQuizzes] = useState<Quiz[]>()
+    const [topQuizzes, setTopQuizzes] = useState<Quiz[]>()
     const {data: session, status} = useSession();
 
     useEffect(() => {
@@ -18,25 +20,35 @@ export default function QuizPage() {
             withRemult(async r => {
                 qRepo.find({
                     where: {
-                        // byUser: session?.user
+                        tracks: {
+                            "!=": []
+                        }
+                    },
+                    orderBy: {
+                        visits: "asc",
+                        completes: "asc"
                     }
-                }).then(setMyQuizzes)
+                }).then(setTopQuizzes)
             })
         }
     }, [session, status]);
 
-    console.log(myQuizzes)
+    console.log(topQuizzes)
 
     return <>
-        <CreateQuiz/>
+        <AuthWrapper>
+            <CreateQuiz/>
 
-        <Grid className={"gap-2 my-2"} numItems={2} numItemsSm={3} numItemsMd={4} numItemsLg={5}>
-            {myQuizzes?.map(q => <Card>
-                <Text>{q.name}</Text>
-                <Title
-                    className={"text-tremor-brand"}>{q.byUserName}</Title>
-            </Card>)}
-        </Grid>
+
+            <Grid className={"gap-2 my-2"} numItems={2} numItemsSm={3} numItemsMd={4} numItemsLg={5}>
+                {topQuizzes?.map(q => <Link href={`/quiz/${q.id}`} key={q.id}>
+                    <Card>
+                        <Title>{q.name}</Title>
+                        <Text>{q.visits} ביקורים, {q.completes} השלמות, {q.tracks.length} רצועות</Text>
+                    </Card>
+                </Link>)}
+            </Grid>
+        </AuthWrapper>
     </>
 }
 
@@ -54,7 +66,7 @@ function CreateQuiz() {
             name,
             byUserName: session?.user?.name || "Guest",
             // @ts-ignore
-            // byUserId: session?.user?.id
+            byUserId: session?.user?.id
         })
         setQuiz(n)
         setLoading(false)

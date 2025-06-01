@@ -4,7 +4,7 @@ import React, {useEffect, useRef, useState} from "react";
 import {Track as SpTrack} from "@spotify/web-api-ts-sdk";
 import {repo} from "remult";
 import {Quiz} from "@/server/entities/Quiz";
-import {Button, Divider, Icon, List, ListItem, Text, TextInput, Title} from "@tremor/react";
+import {Button, Icon, List, ListItem, Text, TextInput, Title} from "@tremor/react";
 import {RiPauseFill, RiPlayFill} from "@remixicon/react";
 import Image from "next/image";
 import {Track} from "@/server/entities/Track";
@@ -15,33 +15,16 @@ import Link from "next/link";
 
 const qRepo = repo(Quiz)
 
-export default function EditQuiz() {
+export default function ShowQuiz() {
     const [quiz, setQuiz] = useState<Quiz | null>()
     const {id} = useParams()
-    const {data: session} = useSession();
+    const {data: session, status} = useSession();
 
     useEffect(() => {
         if (!id) return
-        qRepo.findFirst({
-            id: id as string,
-            // @ts-ignore
-            byUserId: session?.user.id
-        }).then(setQuiz)
+        qRepo.findId(id as string).then(setQuiz)
     }, []);
 
-    const addTrack = async (track: SpTrack) => {
-        if (!quiz) return
-        if (quiz.tracks.map(t => t.id).includes(track.id)) return
-        setQuiz(prevState => {
-                if (!prevState) return
-                return {
-                    ...prevState,
-                    tracks: [track, ...prevState.tracks],
-                }
-            }
-        )
-        await qRepo.update(quiz.id, {tracks: [track, ...quiz.tracks]})
-    }
 
     if (!quiz) {
         return <div className={"w-screen h-screen flex justify-center items-center"}>
@@ -49,6 +32,7 @@ export default function EditQuiz() {
         </div>
     }
 
+    //
     return <>
         <Link href={`/quiz/${quiz.id}`}><Title className={""}>{quiz.name}</Title></Link>
 
@@ -60,6 +44,12 @@ export default function EditQuiz() {
             <Button className={"grow"} onClick={() => navigator.share({url: `${location.origin}/quiz/${quiz?.id}`})}>
                 שתף חידון
             </Button>
+            {
+                // @ts-ignore
+                session?.user.id === quiz.byUserId && <Link href={`/quiz/${quiz.id}/edit`}>
+                    <Button>ערוך</Button>
+                </Link>
+            }
         </div>
 
         <List>
@@ -67,9 +57,6 @@ export default function EditQuiz() {
                 return <TrackPreview key={t.id} track={t}/>
             })}
         </List>
-
-        <Divider/>
-        <SpotifySearch onItemAdded={addTrack}/>
     </>
 }
 

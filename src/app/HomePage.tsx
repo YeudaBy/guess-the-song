@@ -6,7 +6,8 @@ import {Button, Card, Icon, Text, TextInput, Title} from "@tremor/react";
 import {RiArrowLeftLine, RiMedal2Fill, RiMusicLine, RiPlayFill} from "@remixicon/react";
 import Link from "next/link";
 import {Rubik_80s_Fade} from "next/font/google";
-import { motion } from "framer-motion";
+import {motion} from "framer-motion";
+import AuthWrapper from "@/ui/AuthReq";
 
 const rubikS80Fade = Rubik_80s_Fade({
     subsets: ["hebrew"],
@@ -23,46 +24,46 @@ export function HomePageContent() {
             <div className={"p-4 relative overflow-hidden"}>
                 <div
                     className={"md:flex gap-10 justify-center items-center md:min-h-screen md:max-w-5xl md:mx-12 m-auto overflow-hidden"}>
-                        <img src={"/images/pattern.svg"}
-                             className={"absolute -top-40 -left-40 -rotate-12 max-w-none w-[140%] "}/>
+                    <img src={"/images/pattern.svg"}
+                         className={"absolute -top-40 -left-40 -rotate-12 max-w-none w-[140%] "}/>
 
-                        <div className={"w-[96%] m-auto my-6 relative md:w-80"}>
-                            <motion.div
-                                initial={{rotate: 0}}
-                                whileInView={{rotate: 6}}
-                                viewport={{once: true}}
-                                transition={{type: "spring", stiffness: 100}}
-                                className={"w-full h-full absolute top-0 bg-secondary-900/15 rounded-3xl"}
+                    <div className={"w-[96%] m-auto my-6 relative md:w-80"}>
+                        <motion.div
+                            initial={{rotate: 0}}
+                            whileInView={{rotate: 6}}
+                            viewport={{once: true}}
+                            transition={{type: "spring", stiffness: 100}}
+                            className={"w-full h-full absolute top-0 bg-secondary-900/15 rounded-3xl"}
+                        />
+
+                        <picture>
+                            <source media="(max-width: 768px)" srcSet="/images/person-bg-ho.webp"/>
+                            <source media="(min-width: 768px)" srcSet="/images/person-bg-ver.webp"/>
+                            <img
+                                alt={"Person sits, listening to music"}
+                                className={"w-full h-full object-cover rounded-3xl"}
                             />
+                        </picture>
 
-                            <picture>
-                                <source media="(max-width: 768px)" srcSet="/images/person-bg-ho.webp"/>
-                                <source media="(min-width: 768px)" srcSet="/images/person-bg-ver.webp"/>
-                                <img
-                                    alt={"Person sits, listening to music"}
-                                    className={"w-full h-full object-cover rounded-3xl"}
-                                />
-                            </picture>
+                        <motion.div
+                            initial={{rotate: 0}}
+                            whileInView={{rotate: -6}}
+                            viewport={{once: true}}
+                            transition={{type: "spring", stiffness: 100}}
+                            className={`w-full h-full absolute z-20 bg-secondary-50/20 rounded-3xl top-0`}
+                        />
 
+                        <div className={"absolute z-30 transform translate-x-1/2 -translate-y-1/2 top-1/2 right-1/2"}>
                             <motion.div
-                                initial={{rotate: 0}}
-                                whileInView={{rotate: -6}}
+                                initial={{scale: 0, rotate: 0}}
+                                whileInView={{scale: 1.25, rotate: 360}}
                                 viewport={{once: true}}
-                                transition={{type: "spring", stiffness: 100}}
-                                className={`w-full h-full absolute z-20 bg-secondary-50/20 rounded-3xl top-0`}
-                            />
-
-                            <div className={"absolute z-30 transform translate-x-1/2 -translate-y-1/2 top-1/2 right-1/2"}>
-                                <motion.div
-                                    initial={{scale: 0, rotate: 0}}
-                                    whileInView={{scale: 1.25, rotate: 360}}
-                                    viewport={{once: true}}
-                                    transition={{type: "spring", stiffness: 100}}>
-                                    <Icon size={"xs"} icon={RiPlayFill}
-                                          className={`text-secondary-400 drop-shadow-2xl play-icon`}/>
-                                </motion.div>
-                            </div>
+                                transition={{type: "spring", stiffness: 100}}>
+                                <Icon size={"xs"} icon={RiPlayFill}
+                                      className={`text-secondary-400 drop-shadow-2xl play-icon`}/>
+                            </motion.div>
                         </div>
+                    </div>
 
                     <div className={"grow flex flex-col justify-center relative"}>
                         <div className={"text-right my-12 m-2 grow flex justify-center flex-col z-30"}>
@@ -118,9 +119,10 @@ export function HomePageContent() {
                     </Card>
                 </Link>
 
-
-                <img src={"/images/logo-bg.png"}
-                     className={"rounded-3xl shadow-lg w-2/3 m-auto"}/>
+                <AuthWrapper>
+                    <img src={"/images/logo-bg.png"}
+                         className={"rounded-3xl shadow-lg w-2/3 m-auto"}/>
+                </AuthWrapper>
 
                 <Link href={"/contribute"}>
                     <Card
