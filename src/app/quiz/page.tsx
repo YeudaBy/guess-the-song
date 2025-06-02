@@ -10,8 +10,8 @@ import AuthWrapper from "@/ui/AuthReq";
 import Link from "next/link";
 import Image from "next/image";
 import {Spinner} from "@/ui/components";
-import {SimplifiedPlaylist, SpotifyApi} from "@spotify/web-api-ts-sdk";
-import {RiShareLine, RiSpotifyFill} from "@remixicon/react";
+import {Playlist, SimplifiedPlaylist, SpotifyApi, Track} from "@spotify/web-api-ts-sdk";
+import {RiFileCopyLine, RiSearchLine, RiSpotifyFill} from "@remixicon/react";
 
 const qRepo = repo(Quiz)
 
@@ -76,25 +76,47 @@ export default function QuizPage() {
 
 function SpotifyPlaylistSelector() {
     const {data, status} = useSession()
+    const [client, setClient] = useState<SpotifyApi>()
     const [userPlaylists, setUserPlaylists] = useState<SimplifiedPlaylist[]>()
     const [loading, setLoading] = useState(false)
     const [spotifyPlaylistId, setSpotifyPlaylistId] = useState<string>()
+    const [searchLoading, setSearchLoading] = useState(false)
+    const router = useRouter()
 
     useEffect(() => {
         if (!data?.accessToken) return
         setLoading(true)
         const spcl = SpotifyApi.withAccessToken(process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID || "", data.accessToken)
+        setClient(spcl)
         spcl.currentUser.playlists.playlists().then(r => setUserPlaylists(r.items)).finally(() => setLoading(false))
     }, [data?.accessToken]);
 
-    function searchSpotifyPlaylist() {
-
+    async function searchSpotifyPlaylist(e: FormEvent) {
+        e.preventDefault()
+        setSearchLoading(true)
+        if (!spotifyPlaylistId) return
+        const id = extractSpotifyPlaylistId(spotifyPlaylistId)
+        if (!id) return false
+        try {
+            const playlist = await Quiz.getSpPlaylist(id)
+            await onPlaylistSelected(playlist)
+        } finally {
+            setSearchLoading(false)
+        }
     }
 
-    function decodeHtmlEntities(html: any) {
-        const txt = document.createElement("textarea");
-        txt.innerHTML = html;
-        return txt.value;
+    async function onPlaylistSelected(playlist: SimplifiedPlaylist | Playlist<Track>) {
+        console.log(playlist)
+        if (!client) return
+        const tracks = await client.playlists.getPlaylistItems(playlist.id, 'IL', undefined, 50)
+        const n = await qRepo.insert({
+            name: playlist.name,
+            byUserName: data?.user.name || "Guest",
+            byUserId: data?.user.id,
+            image: playlist.images[0].url,
+            tracks: tracks.items.map(t => t.track)
+        })
+        router.push(`/quiz/${n.id}`)
     }
 
     let content;
@@ -120,18 +142,8 @@ function SpotifyPlaylistSelector() {
         </Callout>
     } else {
         content = <List className={"sp-list"}>
-            {userPlaylists?.map(p => <ListItem key={p.id} className={"text-right gap-2"}>
-                <Image src={p.images[0].url} alt={p.name} width={50} height={50} className={"rounded"}/>
-                <div className={"grow"}>
-                    <Text className={"text-sm font-bold"}>{p.name}</Text>
-                    {!!p.description.length &&
-                        <Text
-                            className={"text-xs opacity-75 font-light line-clamp-2"}>{decodeHtmlEntities(p.description)}</Text>}
-                </div>
-                <Button variant={"light"}>
-                    <Icon icon={RiShareLine} color={"white"} size={"xs"}/>
-                </Button>
-            </ListItem>)}
+            {userPlaylists?.map(p => <SpotifyPlaylistItemPreview playlist={p} onSelect={onPlaylistSelected}
+                                                                 key={p.id}/>)}
         </List>
     }
 
@@ -143,8 +155,47 @@ function SpotifyPlaylistSelector() {
         <Divider className={"green-divider"}/>
 
         <Text>או שתף קישור לפלייליסט ואנו ננסה ליצור ממנו חידון:</Text>
-        <TextInput value={spotifyPlaylistId} onValueChange={setSpotifyPlaylistId} placeholder={"קישור לפלייליסט..."}/>
+        <form onSubmit={searchSpotifyPlaylist} className={"flex gap-2"}>
+            <TextInput value={spotifyPlaylistId} onValueChange={setSpotifyPlaylistId}
+                       placeholder={"קישור לפלייליסט..."}/>
+            <Button disabled={searchLoading} variant={"light"}>
+                <Icon icon={searchLoading ? Spinner : RiSearchLine} color={"secondary"}/>
+            </Button>
+        </form>
     </Card>
+}
+
+function SpotifyPlaylistItemPreview({playlist, onSelect}: {
+    playlist: SimplifiedPlaylist,
+    onSelect: (playlist: SimplifiedPlaylist) => Promise<void>,
+}) {
+
+    const [loading, setLoading] = useState(false)
+
+    function decodeHtmlEntities(html: any) {
+        const txt = document.createElement("textarea");
+        txt.innerHTML = html;
+        return txt.value;
+    }
+
+    return <ListItem key={playlist.id}
+                     className={"text-right gap-2 cursor-pointer relative hover:right-2 transition-all active:bg-green-950"}
+                     onClick={() => {
+                         setLoading(true)
+                         onSelect(playlist).finally(() => setLoading(false))
+                     }}>
+        <Image src={playlist.images[0].url} alt={playlist.name} width={50} height={50} className={"rounded"}/>
+        <div className={"grow"}>
+            <Text className={"text-sm font-bold"}>{playlist.name} <span
+                className={"font-light opacity-75 text-xs"}>{playlist.owner.display_name}</span></Text>
+            {!!playlist.description.length &&
+                <Text
+                    className={"text-xs opacity-75 font-light line-clamp-2"}>{decodeHtmlEntities(playlist.description)}</Text>}
+        </div>
+        <Button variant={"light"} disabled={loading}>
+            <Icon icon={loading ? Spinner : RiFileCopyLine} color={"green"} size={"xs"}/>
+        </Button>
+    </ListItem>
 }
 
 function CreateQuiz() {
@@ -184,4 +235,9 @@ function CreateQuiz() {
             </Button>
         </form>
     </Card>
+}
+
+function extractSpotifyPlaylistId(url: string): string | null {
+    const match = url.match(/(?:playlist\/|playlist:)([a-zA-Z0-9]{22})/);
+    return match ? match[1] : null;
 }

@@ -9,6 +9,10 @@ class SpApi {
     async search(query: string) {
         return await this.client().search(query, ["track"], undefined, 10)
     }
+
+    async getPlaylist(id: string) {
+        return await this.client().playlists.getPlaylist(id)
+    }
 }
 
 export const spApi = new SpApi()

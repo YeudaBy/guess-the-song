@@ -41,4 +41,9 @@ export class Quiz {
     static async searchSp(query: string) {
         return spApi.search(query)
     }
+
+    @BackendMethod({allowed: true})
+    static async getSpPlaylist(id: string) {
+        return spApi.getPlaylist(id)
+    }
 }
