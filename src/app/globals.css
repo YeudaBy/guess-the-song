@@ -222,3 +222,17 @@
     @apply bg-background text-foreground;
     }
 }
+
+
+.sp-list.divide-tremor-border > :not([hidden]) ~ :not([hidden]) {
+    border-color: rgba(21, 128, 61, 0.57) !important;
+}
+
+.green-divider div {
+    background: rgba(37, 195, 96, 0.57) !important;
+    height: 3px;
+}
+
+.spotify-selector-card {
+    background: linear-gradient(to bottom left, #011b01, transparent);
+}

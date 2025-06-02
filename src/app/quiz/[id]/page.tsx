@@ -37,9 +37,15 @@ export default function ShowQuiz() {
         </div>
     }
 
+    const play = async () => {
+
+    }
+
     //
     return <>
         <Link href={`/quiz/${quiz.id}`}><Title className={""}>{quiz.name}</Title></Link>
+
+        <Icon icon={RiPlayFill} size={"xl"} className={"m-auto"} onClick={play}/>
 
         <div className={"flex gap-2 mt-2"}>
             <Button className={"grow"}
@@ -57,7 +63,7 @@ export default function ShowQuiz() {
             }
         </div>
 
-        <List>
+        <List className={"mt-5"}>
             {quiz.tracks?.map(t => {
                 return <TrackPreview key={t.id} track={t}/>
             })}
@@ -65,94 +71,6 @@ export default function ShowQuiz() {
     </>
 }
 
-function SpotifySearch({onItemAdded}: {
-    onItemAdded: (item: SpTrack) => void
-}) {
-    const [query, setQuery] = useState<string>()
-    const [suggestions, setSuggestions] = useState<SpTrack[]>()
-    const [item, setItem] = useState<SpTrack>()
-    const [play, setPlay] = useState(false)
-    const [canPlay, setCanPlay] = useState(false)
-
-    const searchId = useRef(0)
-    const audioRef = useRef<HTMLAudioElement>(null)
-
-    useEffect(() => {
-        if (!query || query.length < 3) {
-            setSuggestions([])
-            return
-        }
-
-        const id = ++searchId.current
-        Quiz.searchSp(query).then((results) => {
-            if (searchId.current === id) {
-                setSuggestions(results.tracks?.items)
-            }
-        }).catch(err => {
-            console.error("Search error:", err)
-        })
-    }, [query])
-
-    useEffect(() => {
-        if (!item) return
-        if (!audioRef.current) return;
-
-        Track.getMetadata(item?.id).then(r => {
-            if (!audioRef.current) return
-            audioRef.current.src = r?.audioPreview || ""
-            audioRef.current.addEventListener("canplay", () => setCanPlay(true))
-        })
-
-        return () => {
-            if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current.currentTime = 0;
-                audioRef.current.removeEventListener("canplay", () => setCanPlay(true))
-            }
-            setPlay(false);
-            setCanPlay(false)
-        };
-    }, [item]);
-
-    return <>
-        <TextInput value={query} onValueChange={setQuery} placeholder={"חפש שם שיר או אמן..."}/>
-
-        <List>
-            {suggestions?.map(s => <ListItem onClick={() => {
-                setItem(s)
-                setSuggestions([])
-                setQuery("")
-            }} className={"cursor-pointer"}>
-                <TrackPreview track={s}/>
-            </ListItem>)}
-        </List>
-
-        {!!item && <div
-            className={"gap-2 flex justify-between items-center border border-tremor-brand p-1 mt-3 rounded-tremor-default"}>
-            <TrackPreview track={item}/>
-            <Button variant={"light"} disabled={!canPlay} onClick={() => {
-                if (audioRef.current) {
-                    if (play) {
-                        audioRef.current.pause();
-                        setPlay(false)
-                    } else {
-                        audioRef.current.play().then(() => setPlay(true))
-                    }
-                }
-            }}>
-                <Icon icon={!canPlay ? Spinner : play ? RiPauseFill : RiPlayFill}/>
-            </Button>
-            <Button size={"lg"} onClick={() => {
-                onItemAdded(item)
-                setItem(undefined)
-            }} className={"rounded-md"} variant={"secondary"}>
-                Add
-            </Button>
-
-            <audio hidden ref={audioRef}/>
-        </div>}
-    </>
-}
 
 function TrackPreview({track}: { track: SpTrack }) {
     return <div className={"flex gap-3 text-right grow"}>

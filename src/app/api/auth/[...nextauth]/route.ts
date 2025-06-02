@@ -3,6 +3,7 @@ import GoogleProvider from "next-auth/providers/google";
 import {api} from "@/server/api";
 import {User} from "@/server/entities/User";
 import SpotifyProvider from "next-auth/providers/spotify";
+import {AccessToken} from "@spotify/web-api-ts-sdk";
 
 const SECRET_KEY = process.env.SECRET_KEY || "your-secret-key";
 
@@ -14,13 +15,18 @@ const handler = NextAuth({
         }),
         SpotifyProvider({
             clientId: process.env.SPOTIFY_CLIENT_ID || "",
-            clientSecret: process.env.SPOTIFY_CLIENT_SECRET || ""
+            clientSecret: process.env.SPOTIFY_CLIENT_SECRET || "",
+            authorization: {
+                url: "https://accounts.spotify.com/authorize",
+                params: {
+                    scope: "user-read-email playlist-read-private playlist-read-collaborative",
+                },
+            },
         })
     ],
     secret: SECRET_KEY,
     callbacks: {
         async signIn({profile}) {
-            // נבדוק שקיים אימייל בפרופיל
             if (profile?.email) {
                 const remult = await api.getRemult();
                 const userRepo = remult.repo(User);
@@ -28,7 +34,6 @@ const handler = NextAuth({
                     where: {email: profile.email},
                 });
                 if (!existingUser) {
-                    // יצירת משתמש חדש אם לא קיים
                     const newUser = new User();
                     newUser.name = profile.name || "Unknown";
                     newUser.email = profile.email;
@@ -47,16 +52,29 @@ const handler = NextAuth({
             }
             return true;
         },
-        async jwt({token, user}) {
+        async jwt({token, user, account}) {
             if (user) {
                 token.id = user.id;
+            }
+            if (account?.provider === "spotify") {
+                const tokenObj: AccessToken = {
+                    access_token: account.access_token!,
+                    token_type: account.token_type!,
+                    expires_in: account.expires_at!,
+                    refresh_token: account.refresh_token!,
+                }
+                if (Object.values(tokenObj).every(v => !!v)) {
+                    token.accessToken = tokenObj
+                }
             }
             return token;
         },
         async session({session, token}) {
             if (token && session.user) {
-                // @ts-ignore
-                session.user.id = token.id as number;
+                session.user.id = token.id;
+            }
+            if (token?.accessToken) {
+                session.accessToken = token.accessToken
             }
             return session;
         },
